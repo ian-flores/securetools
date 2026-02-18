@@ -1,0 +1,37 @@
+Package: securetools
+Title: Security-Hardened Tool Library for R LLM Agents
+Version: 0.1.0
+Authors@R:
+    person("Ian", "Flores Siaca", , "ian.flores.siaca@gmail.com", role = c("aut", "cre"))
+Description: Pre-built tool definitions for common data science operations
+    with built-in security constraints. Tools are returned as
+    'securer::securer_tool()' objects with path scoping, parameterized SQL,
+    domain allow-lists, size limits, and rate limiting. Designed for use
+    with 'securer' sandboxed R code execution.
+License: MIT + file LICENSE
+URL: https://github.com/ian-flores/securetools
+BugReports: https://github.com/ian-flores/securetools/issues
+Depends:
+    R (>= 4.1.0)
+Imports:
+    cli (>= 3.0.0),
+    rlang (>= 1.0.0),
+    securer (>= 0.1.0)
+Suggests:
+    arrow,
+    DBI,
+    ggplot2,
+    httr2,
+    jsonlite,
+    knitr,
+    readr,
+    readxl,
+    rmarkdown,
+    RSQLite,
+    testthat (>= 3.0.0),
+    withr
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+VignetteBuilder: knitr
