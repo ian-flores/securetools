@@ -1,0 +1,38 @@
+url: https://ian-flores.github.io/securetools/
+
+template:
+  bootstrap: 5
+
+reference:
+- title: File I/O
+  desc: Tools for reading and writing files with path scoping and size limits.
+  contents:
+  - read_file_tool
+  - write_file_tool
+
+- title: Database
+  desc: Structured database queries with parameterized filters.
+  contents:
+  - query_sql_tool
+
+- title: Data Analysis
+  desc: Tools for data profiling, calculation, and visualization.
+  contents:
+  - data_profile_tool
+  - calculator_tool
+  - plot_tool
+
+- title: Web
+  desc: HTTP fetch with domain allow-lists and rate limiting.
+  contents:
+  - fetch_url_tool
+
+- title: Documentation
+  desc: R help documentation lookup.
+  contents:
+  - r_help_tool
+
+articles:
+- title: Getting Started
+  contents:
+  - securetools

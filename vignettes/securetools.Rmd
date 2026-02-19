@@ -1,0 +1,233 @@
+---
+title: "Getting Started with securetools"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with securetools}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Overview
+
+securetools provides pre-built, security-hardened tool definitions for use
+with [securer](https://github.com/ian-flores/securer). Each tool factory
+returns a `securer::securer_tool()` object with built-in constraints: path
+scoping, parameterized SQL, domain allow-lists, size limits, and rate
+limiting.
+
+## Installation
+
+```{r install}
+# install.packages("pak")
+pak::pak("ian-flores/securetools")
+```
+
+## Quick Example
+
+```{r setup}
+library(securetools)
+library(securer)
+```
+
+### Calculator Tool
+
+The calculator tool evaluates mathematical expressions safely via AST
+validation. Only arithmetic operators, math functions, and numeric
+literals are allowed -- no variable access or arbitrary function calls.
+
+```{r calculator}
+calc <- calculator_tool()
+session <- SecureSession$new(tools = list(calc))
+
+session$execute('calculator(expression = "sqrt(144) + 2^3")')
+#> [1] 20
+
+# This is rejected -- system() is not an allowed function:
+session$execute('calculator(expression = "system(\'whoami\')")')
+#> Error: Function not allowed in calculator: `system`
+
+session$close()
+```
+
+### File I/O Tools
+
+Reading and writing files with path scoping and size limits:
+
+```{r file-io}
+# Only allow access to a specific directory
+data_dir <- "/path/to/project/data"
+
+reader <- read_file_tool(
+  allowed_dirs = data_dir,
+  max_file_size = "50MB",
+  max_rows = 10000
+)
+
+writer <- write_file_tool(
+  allowed_dirs = data_dir,
+  max_file_size = "10MB",
+  overwrite = FALSE
+)
+
+session <- SecureSession$new(tools = list(reader, writer))
+
+# Read a CSV -- auto-detects format from extension
+session$execute('
+  data <- read_file(path = "/path/to/project/data/input.csv", format = "auto")
+  head(data)
+')
+
+# Write results -- path traversal is blocked
+session$execute('
+  result <- data.frame(x = 1:5, y = letters[1:5])
+  write_file(
+    path = "/path/to/project/data/output.csv",
+    content = result,
+    format = "csv"
+  )
+')
+
+session$close()
+```
+
+### SQL Query Tool
+
+Structured queries with parameterized filters -- SQL injection is
+structurally impossible because no raw SQL is accepted:
+
+```{r sql}
+library(DBI)
+con <- dbConnect(RSQLite::SQLite(), "app.db")
+
+sql_tool <- query_sql_tool(
+
+  conn = con,
+  allowed_tables = c("users", "orders"),
+  max_rows = 1000
+)
+
+session <- SecureSession$new(tools = list(sql_tool))
+
+# Query with filter -- uses parameterized query internally
+session$execute('
+  query_sql(
+    table = "users",
+    columns = "name, email",
+    filter_column = "active",
+    filter_value = "1"
+  )
+')
+
+session$close()
+dbDisconnect(con)
+```
+
+### URL Fetch Tool
+
+HTTP GET/HEAD with domain allow-lists and rate limiting:
+
+```{r fetch}
+fetcher <- fetch_url_tool(
+  allowed_domains = c("api.github.com", "*.githubusercontent.com"),
+  max_response_size = "1MB",
+  timeout_secs = 30,
+  max_calls_per_minute = 10
+)
+
+session <- SecureSession$new(tools = list(fetcher))
+
+session$execute('
+  result <- fetch_url(url = "https://api.github.com/zen", method = "GET")
+  result$body
+')
+
+session$close()
+```
+
+### Data Profiling
+
+Compute summary statistics for data frames:
+
+```{r profile}
+profiler <- data_profile_tool(max_rows = 100000)
+session <- SecureSession$new(tools = list(profiler))
+
+session$execute('
+  profile <- data_profile(data = iris)
+  profile$columns[[1]]  # Sepal.Length stats
+')
+
+session$close()
+```
+
+### Plot Tool
+
+Render plots to files with path scoping:
+
+```{r plot}
+plotter <- plot_tool(
+  allowed_dirs = "/path/to/output",
+  max_file_size = "5MB"
+)
+
+session <- SecureSession$new(tools = list(plotter))
+
+session$execute('
+  plot(
+    path = "/path/to/output/chart.png",
+    plot_code = "hist(rnorm(1000), main = \"Distribution\")",
+    width = 8,
+    height = 6
+  )
+')
+
+session$close()
+```
+
+## Security Model
+
+Every tool enforces constraints at the **parent process** level, not in
+the sandbox. This means even if the sandbox is somehow bypassed, tool-level
+protections still hold:
+- **Path scoping**: symlinks are resolved before checking allowed directories
+- **Parameterized SQL**: structured interface prevents injection by design
+- **Domain allow-lists**: URL validation before any HTTP request
+- **Size limits**: checked after serialization (write) or before processing (read)
+- **Rate limiting**: per-tool lifetime and/or sliding window limits
+- **AST validation**: calculator expression safety via recursive AST walking
+
+## Rate Limiting
+
+All tool factories accept `max_calls` for lifetime rate limiting:
+
+```{r rate-limit}
+# Allow only 100 calculator evaluations per session
+calc <- calculator_tool(max_calls = 100)
+
+# URL fetch with both lifetime and per-minute limits
+fetcher <- fetch_url_tool(
+  max_calls = 1000,
+  max_calls_per_minute = 10
+)
+```
+
+## Available Tools
+
+| Tool | Factory | Key Security Features |
+|------|---------|----------------------|
+| Calculator | `calculator_tool()` | AST validation, no code injection |
+| Data Profile | `data_profile_tool()` | Row sampling for large data |
+| Read File | `read_file_tool()` | Path scoping, size limits |
+| Write File | `write_file_tool()` | Path scoping, size limits, overwrite protection |
+| SQL Query | `query_sql_tool()` | Table allow-list, parameterized queries |
+| URL Fetch | `fetch_url_tool()` | Domain allow-list, rate limiting |
+| Plot | `plot_tool()` | Path scoping, output size limits |
+| R Help | `r_help_tool()` | Package allow-list |
