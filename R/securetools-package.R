@@ -1,4 +1,12 @@
-#' @keywords internal
+#' securetools: Security-Hardened Tool Definitions for securer
+#'
+#' Provides pre-built, security-hardened tool definitions for use with
+#' the \pkg{securer} package. Each tool factory returns a
+#' [securer::securer_tool()] object with built-in security constraints
+#' such as path validation, allow-lists, rate limiting, and parameterized
+#' queries.
+#'
+#' @seealso [securer::securer_tool()] for the underlying tool constructor.
 "_PACKAGE"
 
 ## usethis namespace: start

@@ -9,12 +9,40 @@
 #'   documentation from. Default includes base R packages.
 #' @param max_lines Maximum lines of help text to return. Default 100.
 #' @param max_calls Maximum invocations. `NULL` means unlimited.
+#'
+#' @details
+#' The tool restricts documentation lookup to the packages specified
+#' in `allowed_packages`. Both topic name and package name must be
+#' provided; the package must be in the allow-list.
+#'
+#' Help text is rendered as plain text via [tools::Rd2txt()] and
+#' truncated to `max_lines` lines.
+#'
 #' @return A `securer_tool` object.
+#'
+#' @family tool factories
+#' @seealso \code{\link[securer]{securer_tool}}
+#'
+#' @examples
+#' \dontrun{
+#' tool <- r_help_tool(
+#'   allowed_packages = c("base", "stats", "utils"),
+#'   max_lines = 200
+#' )
+#' }
 #' @export
 r_help_tool <- function(allowed_packages = c("base", "stats", "utils",
                                               "methods", "grDevices",
                                               "graphics", "datasets"),
                         max_lines = 100, max_calls = NULL) {
+  # Factory argument validation
+  if (!is.character(allowed_packages) || length(allowed_packages) == 0L) {
+    cli_abort("{.arg allowed_packages} must be a non-empty character vector.")
+  }
+  if (!is.null(max_calls) && (!is.numeric(max_calls) || length(max_calls) != 1L || max_calls < 1L)) {
+    cli_abort("{.arg max_calls} must be NULL or a positive number.")
+  }
+
   limiter <- new_rate_limiter(max_calls)
 
   securer::securer_tool(
@@ -37,7 +65,8 @@ r_help_tool <- function(allowed_packages = c("base", "stats", "utils",
         cli_abort("No help found for {.fn {topic}} in package {.pkg {package}}")
       }
 
-      # Render help text -- .getHelpFile is not exported, access via namespace
+      # NOTE: Accesses unexported utils function .getHelpFile.
+      # This may break in future R versions if the internal API changes.
       get_help_file <- get(".getHelpFile", envir = asNamespace("utils"))
       help_file <- get_help_file(help_obj)
       txt <- utils::capture.output(

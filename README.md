@@ -1,5 +1,9 @@
 # securetools
 
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
+
 Security-hardened tool definitions for R LLM agents. Pre-built
 [securer](https://github.com/ian-flores/securer) tool factories with
 path scoping, parameterized SQL, domain allow-lists, size limits, and rate
@@ -54,6 +58,18 @@ session$close()
 - **Symlink resolution**: `normalizePath()` before path prefix check
   prevents symlink escape
 - **AST walking**: Calculator validates expression trees, not strings
+
+## Getting Started
+
+See the [Getting Started vignette](https://ian-flores.github.io/securetools/articles/securetools.html)
+for detailed usage examples of each tool and an overview of the security model.
+Full documentation is available at the [pkgdown site](https://ian-flores.github.io/securetools/).
+
+## Contributing
+
+Found a bug or have a feature request? Please
+[file an issue](https://github.com/ian-flores/securetools/issues) on GitHub.
+Contributions via pull requests are welcome.
 
 ## License
 

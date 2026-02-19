@@ -6,9 +6,40 @@
 #' @param max_rows Maximum rows to profile. Larger data frames are sampled.
 #'   Default 100000.
 #' @param max_calls Maximum invocations allowed. `NULL` (default) means unlimited.
+#'
+#' @details
+#' Computes per-column statistics including type, missing count, and
+#' unique count. For numeric and integer columns, also computes min,
+#' max, mean, median, and standard deviation. For character and factor
+#' columns, returns the top 5 most frequent values with counts.
+#'
+#' When the input data frame exceeds `max_rows`, a random sample of
+#' `max_rows` rows is profiled and the result indicates that sampling
+#' occurred.
+#'
+#' The `data` argument is declared as type `"list"` in the tool schema
+#' because the IPC serialization layer converts data frames to lists.
+#' The tool automatically coerces list input back to a data frame.
+#'
 #' @return A `securer_tool` object.
+#'
+#' @family tool factories
+#' @seealso \code{\link[securer]{securer_tool}}
+#'
+#' @examples
+#' \dontrun{
+#' tool <- data_profile_tool(max_rows = 50000, max_calls = 10)
+#' }
 #' @export
 data_profile_tool <- function(max_rows = 100000, max_calls = NULL) {
+  # Factory argument validation
+  if (!is.numeric(max_rows) || length(max_rows) != 1L || max_rows < 1L) {
+    cli_abort("{.arg max_rows} must be a positive number.")
+  }
+  if (!is.null(max_calls) && (!is.numeric(max_calls) || length(max_calls) != 1L || max_calls < 1L)) {
+    cli_abort("{.arg max_calls} must be NULL or a positive number.")
+  }
+
   limiter <- new_rate_limiter(max_calls)
 
   securer::securer_tool(

@@ -15,10 +15,15 @@ Depends:
     R (>= 4.1.0)
 Imports:
     cli (>= 3.0.0),
+    grDevices,
     rlang (>= 1.0.0),
-    securer (>= 0.1.0)
+    securer (>= 0.1.0),
+    stats,
+    tools,
+    utils
 Suggests:
     arrow,
+    callr,
     DBI,
     ggplot2,
     httr2,
