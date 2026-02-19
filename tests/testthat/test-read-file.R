@@ -137,3 +137,12 @@ test_that("read_file_tool rejects nonexistent file", {
   tool <- read_file_tool(allowed_dirs = dir)
   expect_error(tool$fn(path = file.path(dir, "nope.csv")), "does not exist")
 })
+
+test_that("read_file_tool handles empty text file", {
+  dir <- withr::local_tempdir()
+  f <- file.path(dir, "empty.txt")
+  file.create(f)
+  tool <- read_file_tool(allowed_dirs = dir)
+  result <- tool$fn(path = f)
+  expect_true(length(result) == 0L || (length(result) == 1L && result == ""))
+})

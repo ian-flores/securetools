@@ -181,3 +181,25 @@ test_that("write_file_tool explicit format overrides extension", {
   tool$fn(path = file.path(dir, "out.txt"), content = "hello", format = "txt")
   expect_equal(readLines(file.path(dir, "out.txt")), "hello")
 })
+
+test_that("write_file_tool rejects path traversal", {
+  dir <- withr::local_tempdir()
+  tool <- write_file_tool(allowed_dirs = dir)
+  expect_error(
+    tool$fn(path = file.path(dir, "..", "escaped.txt"), content = "evil", format = "txt"),
+    "[Oo]utside|not allowed"
+  )
+})
+
+test_that("write_file_tool rejects symlink escape", {
+  skip_on_os("windows")
+  dir <- withr::local_tempdir()
+  outside <- withr::local_tempdir()
+  link <- file.path(dir, "escape")
+  file.symlink(outside, link)
+  tool <- write_file_tool(allowed_dirs = dir)
+  expect_error(
+    tool$fn(path = file.path(link, "evil.txt"), content = "data", format = "txt"),
+    "[Oo]utside|not allowed"
+  )
+})

@@ -26,9 +26,3 @@ make_test_dir <- function(env = parent.frame()) {
   dir
 }
 
-#' Create a test file with given content, returns the file path
-make_test_file <- function(dir, name, content, env = parent.frame()) {
-  path <- file.path(dir, name)
-  writeLines(content, path)
-  path
-}

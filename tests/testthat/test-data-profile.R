@@ -92,3 +92,15 @@ test_that("data_profile rejects non-list input", {
   tool <- data_profile_tool()
   expect_error(tool$fn(data = "not a data frame"), "data frame")
 })
+
+test_that("data_profile handles logical columns", {
+  tool <- data_profile_tool()
+  result <- tool$fn(data = data.frame(x = c(TRUE, FALSE, NA)))
+  expect_equal(result$columns[[1]]$n_missing, 1)
+})
+
+test_that("data_profile handles all-NA column", {
+  tool <- data_profile_tool()
+  result <- tool$fn(data = data.frame(x = c(NA_real_, NA_real_, NA_real_)))
+  expect_equal(result$columns[[1]]$n_missing, 3)
+})

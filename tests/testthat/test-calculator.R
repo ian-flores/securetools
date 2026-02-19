@@ -61,6 +61,22 @@ test_that("calculator rate limiting works", {
   expect_error(tool$fn(expression = "3 + 3"), "Rate limit")
 })
 
+test_that("calculator handles empty expression", {
+  tool <- calculator_tool()
+  expect_error(tool$fn(expression = ""))
+})
+
+test_that("calculator handles Inf and NaN", {
+  tool <- calculator_tool()
+  expect_equal(tool$fn(expression = "1/0"), Inf)
+  expect_true(is.nan(tool$fn(expression = "0/0")))
+})
+
+test_that("calculator rejects backtick-quoted dangerous functions", {
+  tool <- calculator_tool()
+  expect_error(tool$fn(expression = "`system`('whoami')"), "[Nn]ot allowed")
+})
+
 test_that("calculator_tool returns securer_tool object", {
   tool <- calculator_tool()
   expect_s3_class(tool, "securer_tool")

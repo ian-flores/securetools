@@ -155,3 +155,14 @@ test_that("query_sql_tool returns securer_tool object", {
   expect_s3_class(tool, "securer_tool")
   expect_equal(tool$name, "query_sql")
 })
+
+test_that("query_sql handles empty result set", {
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("RSQLite")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con))
+  DBI::dbWriteTable(con, "t", data.frame(id = 1:3, name = c("a", "b", "c")))
+  tool <- query_sql_tool(conn = con, allowed_tables = "t")
+  result <- tool$fn(table = "t", filter_column = "id", filter_value = "999")
+  expect_equal(nrow(result), 0)
+})

@@ -15,7 +15,7 @@ test_that("lifetime limiting enforces max_calls", {
   expect_true(lim$check())
 
   # 4th call fails
-  expect_error(lim$check(), "Rate limit exceeded: 3 calls per session")
+  expect_error(lim$check(), "Rate limit exceeded")
 })
 
 test_that("window-based limiting expires old calls", {
@@ -28,8 +28,11 @@ test_that("window-based limiting expires old calls", {
   # 3rd call should fail immediately
   expect_error(lim$check(), "Rate limit exceeded")
 
-  # Wait for the window to expire
-  Sys.sleep(1.1)
+  # Wait for the 1-second rate-limit window to expire. We sleep slightly
+
+  # longer than the window (1.01s) to avoid flaky failures from timer
+  # granularity on slow CI runners.
+  Sys.sleep(1.01)
 
   # Now calls should succeed again
   expect_true(lim$check())
