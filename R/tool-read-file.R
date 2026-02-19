@@ -10,10 +10,50 @@
 #'   string like `"10MB"`.
 #' @param max_rows Maximum rows for tabular formats. Default 10000.
 #' @param max_calls Maximum invocations. `NULL` means unlimited.
+#'
+#' @details
+#' Supported formats: csv, json, txt, xlsx, parquet, rds. Format is detected
+#' automatically from the file extension, or can be specified explicitly via
+#' the `format` argument.
+#'
+#' Security measures:
+#' \itemize{
+#'   \item \strong{Path validation}: All paths are resolved via
+#'     [base::normalizePath()] and checked against `allowed_dirs`. Symlinks are
+#'     resolved before the directory check, preventing symlink-based escapes.
+#'   \item \strong{RDS sandboxing}: RDS files are deserialized in a separate
+#'     subprocess via \pkg{callr}, isolating the main process from malicious
+#'     objects that execute code on load.
+#'   \item \strong{Size limits}: Files exceeding `max_file_size` are rejected
+#'     before reading.
+#'   \item \strong{Row limits}: Tabular formats (csv, xlsx) are capped at
+#'     `max_rows` rows.
+#' }
+#'
 #' @return A `securer_tool` object.
+#'
+#' @family tool factories
+#' @seealso \code{\link[securer]{securer_tool}}
+#'
+#' @examples
+#' \dontrun{
+#' tool <- read_file_tool(
+#'   allowed_dirs = c("/data/reports", "/data/exports"),
+#'   max_file_size = "10MB",
+#'   max_rows = 5000
+#' )
+#' }
 #' @export
 read_file_tool <- function(allowed_dirs, max_file_size = "50MB", max_rows = 10000,
                            max_calls = NULL) {
+  # Factory argument validation
+  if (!is.character(allowed_dirs) || length(allowed_dirs) == 0L) {
+    cli_abort("{.arg allowed_dirs} must be a non-empty character vector.")
+  }
+  if (!is.null(max_calls) && (!is.numeric(max_calls) || length(max_calls) != 1L || max_calls < 1L)) {
+    cli_abort("{.arg max_calls} must be NULL or a positive number.")
+  }
+
   max_bytes <- parse_size(max_file_size)
   limiter <- new_rate_limiter(max_calls)
 
@@ -89,7 +129,8 @@ read_by_format <- function(path, format, max_rows) {
       arrow::read_parquet(path)
     },
     rds = {
-      readRDS(path)
+      rlang::check_installed("callr", reason = "to safely read RDS files")
+      callr::r(function(p) readRDS(p), args = list(path))
     },
     cli_abort("Unsupported format: {.val {format}}")
   )

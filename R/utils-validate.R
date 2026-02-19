@@ -12,6 +12,14 @@
 #' @return The resolved path (invisibly).
 #' @noRd
 validate_path <- function(path, allowed_dirs, must_exist = TRUE) {
+  # NOTE: When must_exist = FALSE, there is an inherent TOCTOU race between
+  # path validation and the actual write. Use validate_written_path() after
+  # writing to mitigate symlink-swap attacks.
+
+  if (!is.character(path) || length(path) != 1L || !nzchar(path)) {
+    cli_abort("{.arg path} must be a single non-empty string.")
+  }
+
   resolved_allowed <- normalizePath(allowed_dirs, mustWork = FALSE)
 
   if (must_exist) {
@@ -89,7 +97,13 @@ parse_size <- function(x) {
     GB = 1024^3
   )
 
-  number * multiplier
+  bytes <- number * multiplier
+
+  if (bytes <= 0) {
+    cli_abort("Size must be a positive value, not {.val {x}}.")
+  }
+
+  bytes
 }
 
 #' Truncate a character string to a maximum number of characters
@@ -142,7 +156,7 @@ validate_sql_identifier <- function(name, allowed = NULL, what = "column") {
 #' @noRd
 coerce_list_to_df <- function(x) {
   if (!is.list(x) || length(x) == 0L) {
-    stop("Cannot coerce to data.frame")
+    cli_abort("Cannot coerce list to data.frame: unexpected structure.")
   }
 
   # Detect row-oriented: unnamed list where each element is a named list
@@ -175,5 +189,32 @@ coerce_list_to_df <- function(x) {
     return(as.data.frame(cols, stringsAsFactors = FALSE))
   }
 
-  stop("Cannot coerce to data.frame")
+  cli_abort("Cannot coerce list to data.frame: unexpected structure.")
+}
+
+#' Re-validate a path after writing (TOCTOU mitigation)
+#'
+#' Call this after writing a file to verify the resolved path is still
+#' within allowed directories. This mitigates symlink TOCTOU attacks
+#' where the target is swapped between validation and write.
+#'
+#' @param path The path that was written to.
+#' @param allowed_dirs Character vector of allowed directories.
+#' @return invisible(TRUE) if valid.
+#' @noRd
+validate_written_path <- function(path, allowed_dirs) {
+  if (!file.exists(path)) {
+    cli_abort("Written file no longer exists at {.path {path}}.")
+  }
+  resolved <- normalizePath(path, mustWork = TRUE)
+  norm_dirs <- normalizePath(allowed_dirs, mustWork = TRUE)
+  inside <- vapply(norm_dirs, function(d) startsWith(resolved, paste0(d, "/")), logical(1))
+  # Also check exact match (file directly in allowed dir root)
+  exact <- vapply(norm_dirs, function(d) resolved == d, logical(1))
+  if (!any(inside) && !any(exact)) {
+    # Remove the potentially escaped file
+    unlink(path)
+    cli_abort("Written file resolved to {.path {resolved}}, which is outside allowed directories.")
+  }
+  invisible(TRUE)
 }

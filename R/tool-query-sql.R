@@ -9,13 +9,56 @@
 #' @param conn A DBI connection object.
 #' @param allowed_tables Character vector of table names the tool can query.
 #' @param max_rows Maximum rows returned. Default 1000.
-#' @param read_only If TRUE (default), only SELECT queries are allowed.
 #' @param max_calls Maximum invocations. `NULL` means unlimited.
+#'
+#' @details
+#' Security constraints:
+#' \itemize{
+#'   \item \strong{Structured SELECT only}: The tool constructs SELECT
+#'     queries from structured arguments. No raw SQL is accepted, making
+#'     SQL injection structurally impossible.
+#'   \item \strong{Parameterized filters}: Filter values are passed as
+#'     query parameters, never interpolated into SQL strings.
+#'   \item \strong{Identifier quoting}: Table and column names are quoted
+#'     with [DBI::dbQuoteIdentifier()] after passing allow-list validation,
+#'     providing defense in depth.
+#'   \item \strong{Table allow-list}: Only tables listed in `allowed_tables`
+#'     can be queried.
+#' }
+#'
 #' @return A `securer_tool` object.
+#'
+#' @family tool factories
+#' @seealso \code{\link[securer]{securer_tool}}
+#'
+#' @examples
+#' \dontrun{
+#' tool <- query_sql_tool(
+#'   conn = DBI::dbConnect(RSQLite::SQLite(), ":memory:"),
+#'   allowed_tables = c("customers", "orders"),
+#'   max_rows = 500
+#' )
+#' }
 #' @export
 query_sql_tool <- function(conn, allowed_tables, max_rows = 1000,
-                           read_only = TRUE, max_calls = NULL) {
+                           max_calls = NULL) {
   rlang::check_installed("DBI", reason = "to use query_sql_tool()")
+
+  # Factory argument validation
+  if (!inherits(conn, "DBIConnection")) {
+    cli_abort("{.arg conn} must be a DBI connection object.")
+  }
+
+  if (!is.character(allowed_tables) || length(allowed_tables) == 0L) {
+    cli_abort("{.arg allowed_tables} must be a non-empty character vector.")
+  }
+  if (!is.numeric(max_rows) || length(max_rows) != 1L || max_rows < 1L) {
+    cli_abort("{.arg max_rows} must be a positive number.")
+  }
+  if (!is.null(max_calls) && (!is.numeric(max_calls) || length(max_calls) != 1L || max_calls < 1L)) {
+    cli_abort("{.arg max_calls} must be NULL or a positive number.")
+  }
+
   limiter <- new_rate_limiter(max_calls)
 
   securer::securer_tool(
@@ -27,13 +70,16 @@ query_sql_tool <- function(conn, allowed_tables, max_rows = 1000,
       # Validate table name against allow-list
       validate_sql_identifier(table, allowed = allowed_tables, what = "table")
 
+      # Quote table identifier for defense in depth
+      table_q <- DBI::dbQuoteIdentifier(conn, table)
+
       # Parse and validate columns
       if (!identical(columns, "*")) {
         col_names <- trimws(strsplit(columns, ",")[[1]])
         for (col in col_names) {
           validate_sql_identifier(col, what = "column")
         }
-        cols_sql <- paste(col_names, collapse = ", ")
+        cols_sql <- paste(vapply(col_names, function(c) as.character(DBI::dbQuoteIdentifier(conn, c)), character(1)), collapse = ", ")
       } else {
         cols_sql <- "*"
       }
@@ -43,12 +89,13 @@ query_sql_tool <- function(conn, allowed_tables, max_rows = 1000,
 
       if (has_filter) {
         validate_sql_identifier(filter_column, what = "column")
-        sql <- paste0("SELECT ", cols_sql, " FROM ", table,
-                      " WHERE ", filter_column, " = ?",
+        filter_q <- DBI::dbQuoteIdentifier(conn, filter_column)
+        sql <- paste0("SELECT ", cols_sql, " FROM ", table_q,
+                      " WHERE ", filter_q, " = ?",
                       " LIMIT ", max_rows)
         params <- list(filter_value)
       } else {
-        sql <- paste0("SELECT ", cols_sql, " FROM ", table,
+        sql <- paste0("SELECT ", cols_sql, " FROM ", table_q,
                       " LIMIT ", max_rows)
         params <- NULL
       }

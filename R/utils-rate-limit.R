@@ -16,22 +16,24 @@ new_rate_limiter <- function(max_calls = NULL, window_secs = NULL) {
   limiter$max_calls <- max_calls
   limiter$window_secs <- window_secs
   limiter$timestamps <- numeric(0)
+  limiter$call_count <- 0L
 
   limiter$check <- function() {
-    now <- proc.time()[["elapsed"]]
-
-    if (!is.null(limiter$window_secs)) {
-      cutoff <- now - limiter$window_secs
-      limiter$timestamps <- limiter$timestamps[limiter$timestamps > cutoff]
+    if (is.null(limiter$window_secs)) {
+      limiter$call_count <- limiter$call_count + 1L
+      if (limiter$call_count > limiter$max_calls) {
+        cli_abort("Rate limit exceeded: maximum {limiter$max_calls} lifetime calls.")
+      }
+      return(invisible(TRUE))
     }
 
+    now <- proc.time()[["elapsed"]]
+
+    cutoff <- now - limiter$window_secs
+    limiter$timestamps <- limiter$timestamps[limiter$timestamps > cutoff]
+
     if (length(limiter$timestamps) >= limiter$max_calls) {
-      per_window_msg <- if (!is.null(limiter$window_secs)) {
-        paste0(" per ", limiter$window_secs, "s window")
-      } else {
-        " per session"
-      }
-      cli_abort("Rate limit exceeded: {limiter$max_calls} calls{per_window_msg}")
+      cli_abort("Rate limit exceeded: {limiter$max_calls} calls per {limiter$window_secs}s window")
     }
 
     limiter$timestamps <- c(limiter$timestamps, now)
