@@ -4,8 +4,6 @@
 .Ruserdata
 inst/doc
 docs/
-man/*.Rd
-NAMESPACE
 *.o
 *.so
 *.dll
