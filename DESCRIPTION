@@ -9,7 +9,8 @@ Description: Pre-built tool definitions for common data science operations
     domain allow-lists, size limits, and rate limiting. Designed for use
     with 'securer' sandboxed R code execution.
 License: MIT + file LICENSE
-URL: https://github.com/ian-flores/securetools
+URL: https://github.com/ian-flores/securetools,
+    https://ian-flores.github.io/securetools/
 BugReports: https://github.com/ian-flores/securetools/issues
 Depends:
     R (>= 4.1.0)
