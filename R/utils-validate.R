@@ -20,11 +20,11 @@ validate_path <- function(path, allowed_dirs, must_exist = TRUE) {
     cli_abort("{.arg path} must be a single non-empty string.")
   }
 
-  resolved_allowed <- normalizePath(allowed_dirs, mustWork = FALSE)
+  resolved_allowed <- normalizePath(allowed_dirs, winslash = "/", mustWork = FALSE)
 
   if (must_exist) {
     resolved <- tryCatch(
-      normalizePath(path, mustWork = TRUE),
+      normalizePath(path, winslash = "/", mustWork = TRUE),
       error = function(e) {
         cli_abort("Path does not exist: {.path {path}}")
       }
@@ -32,12 +32,12 @@ validate_path <- function(path, allowed_dirs, must_exist = TRUE) {
   } else {
     parent <- dirname(path)
     resolved_parent <- tryCatch(
-      normalizePath(parent, mustWork = TRUE),
+      normalizePath(parent, winslash = "/", mustWork = TRUE),
       error = function(e) {
         cli_abort("Parent directory does not exist: {.path {parent}}")
       }
     )
-    resolved <- file.path(resolved_parent, basename(path))
+    resolved <- paste0(resolved_parent, "/", basename(path))
   }
 
   in_allowed <- vapply(resolved_allowed, function(dir) {
@@ -206,8 +206,8 @@ validate_written_path <- function(path, allowed_dirs) {
   if (!file.exists(path)) {
     cli_abort("Written file no longer exists at {.path {path}}.")
   }
-  resolved <- normalizePath(path, mustWork = TRUE)
-  norm_dirs <- normalizePath(allowed_dirs, mustWork = TRUE)
+  resolved <- normalizePath(path, winslash = "/", mustWork = TRUE)
+  norm_dirs <- normalizePath(allowed_dirs, winslash = "/", mustWork = TRUE)
   inside <- vapply(norm_dirs, function(d) startsWith(resolved, paste0(d, "/")), logical(1))
   # Also check exact match (file directly in allowed dir root)
   exact <- vapply(norm_dirs, function(d) resolved == d, logical(1))
