@@ -4,10 +4,6 @@ template:
   bootstrap: 5
 
 reference:
-- title: Package
-  contents:
-  - "securetools-package"
-
 - title: File I/O
   desc: Tools for reading and writing files with path scoping and size limits.
   contents:

@@ -7,6 +7,7 @@
 #' queries.
 #'
 #' @seealso [securer::securer_tool()] for the underlying tool constructor.
+#' @keywords internal
 "_PACKAGE"
 
 ## usethis namespace: start
