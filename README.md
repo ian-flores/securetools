@@ -1,5 +1,8 @@
 # securetools
 
+> [!CAUTION]
+> **Alpha software.** This package is part of a broader effort by [Ian Flores Siaca](https://github.com/ian-flores) to develop proper AI infrastructure for the R ecosystem. It is under active development and should **not** be used in production until an official release is published. APIs may change without notice.
+
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![R-CMD-check](https://github.com/ian-flores/securetools/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ian-flores/securetools/actions/workflows/R-CMD-check.yaml)
