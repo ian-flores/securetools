@@ -6,7 +6,7 @@ template:
 reference:
 - title: Package
   contents:
-  - securetools-package
+  - "securetools-package"
 
 - title: File I/O
   desc: Tools for reading and writing files with path scoping and size limits.
