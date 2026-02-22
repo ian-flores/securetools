@@ -75,7 +75,7 @@ test_that("validate_path with must_exist = FALSE allows new file in allowed dir"
     allowed_dirs = dir,
     must_exist = FALSE
   )
-  expect_true(startsWith(resolved, normalizePath(dir)))
+  expect_true(startsWith(resolved, normalizePath(dir, winslash = "/")))
 })
 
 test_that("validate_path with must_exist = FALSE rejects new file outside allowed dir", {
