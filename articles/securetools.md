@@ -1,5 +1,34 @@
 # Getting Started with securetools
 
+## Why Security-Hardened Tools?
+
+When you give an LLM agent access to tools, you are handing executable
+capabilities to a system that was trained to be helpful – not to be
+safe. A model that can call
+[`system()`](https://rdrr.io/r/base/system.html) can run arbitrary shell
+commands. A model with unrestricted file write can overwrite
+`/etc/passwd` or plant a reverse shell. A model with raw SQL access can
+`DROP TABLE users` or exfiltrate every row from your production
+database.
+
+These are not theoretical risks. Research on prompt injection and
+adversarial tool use has demonstrated that LLM agents will follow
+carefully-crafted instructions embedded in untrusted data – a
+user-uploaded CSV, a web page fetched by the agent, or even a crafted
+column name in a database result. If the tools available to the agent
+have no inherent safety boundaries, a single successful injection can
+compromise the host system.
+
+securetools addresses this by providing **pre-built tool definitions
+where security constraints are structural, not advisory**. Instead of
+telling the model “please only read files in this directory,” the tool
+physically cannot access files outside the allowed directories. Instead
+of hoping the model will avoid SQL injection, the tool accepts
+structured parameters and constructs parameterized queries internally.
+The agent never sees raw SQL, raw file paths outside the sandbox, or
+unrestricted HTTP access. Security is enforced by the tool, not
+requested from the model.
+
 ## Overview
 
 securetools provides pre-built, security-hardened tool definitions for
@@ -8,6 +37,39 @@ factory returns a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
 object with built-in constraints: path scoping, parameterized SQL,
 domain allow-lists, size limits, and rate limiting.
+
+## How Tool Execution Works
+
+Every securetools call follows the same execution flow. Understanding
+this flow is key to understanding why the security model is robust –
+validation happens in the parent process, which the sandbox cannot
+influence.
+
+      LLM Agent                 Parent Process (R)              Sandbox (securer)
+      =========                 ==================              =================
+          |                            |                               |
+          |--- tool_call(args) ------->|                               |
+          |                            |                               |
+          |                     1. Validate args:                      |
+          |                        - Check rate limit                  |
+          |                        - Resolve symlinks                  |
+          |                        - Match allow-lists                 |
+          |                        - Verify size limits                |
+          |                            |                               |
+          |                     2. Reject? -----> Error to LLM         |
+          |                            |                               |
+          |                     3. Pass validated -------> Execute     |
+          |                        call to sandbox         in sandbox  |
+          |                            |                               |
+          |                            |<------------- Result ---------|
+          |                            |                               |
+          |<--- result/error ----------|                               |
+
+The crucial insight: **validation runs in the parent process**, which
+the sandboxed code cannot modify or bypass. Even if a sandbox escape
+were possible, the parent-level checks (path scoping, rate limits, SQL
+parameterization) still apply because they execute before the call ever
+reaches the sandbox.
 
 ## Installation
 
@@ -25,9 +87,18 @@ library(securer)
 
 ### Calculator Tool
 
+**The threat:** An LLM asked to “calculate” something might generate
+arbitrary R code instead of a simple arithmetic expression. Without
+validation, `calculator(expression = "system('rm -rf /')")` would
+execute a destructive shell command. Code injection through expression
+evaluation is one of the oldest and most dangerous attack vectors.
+
 The calculator tool evaluates mathematical expressions safely via AST
-validation. Only arithmetic operators, math functions, and numeric
-literals are allowed – no variable access or arbitrary function calls.
+validation. It parses the expression into an abstract syntax tree and
+walks every node, verifying that only arithmetic operators, math
+functions, and numeric literals are present. Variable access,
+assignment, and arbitrary function calls are all rejected before
+evaluation ever occurs.
 
 ``` r
 calc <- calculator_tool()
@@ -45,7 +116,16 @@ session$close()
 
 ### File I/O Tools
 
-Reading and writing files with path scoping and size limits:
+**The threat:** An agent with unrestricted file access can read secrets
+(`~/.ssh/id_rsa`, `.env` files, `/etc/shadow`) or write to sensitive
+locations. Path traversal attacks using `../../` sequences or symlinks
+let an attacker escape any intended directory. An agent might also
+exhaust disk space by writing extremely large files in a loop.
+
+File I/O tools enforce path scoping with symlink resolution, size
+limits, and directory allow-lists. Reading and writing are scoped
+independently so you can give an agent read access to source data
+without granting write access to the same directory:
 
 ``` r
 # Only allow access to a specific directory
@@ -86,8 +166,33 @@ session$close()
 
 ### SQL Query Tool
 
-Structured queries with parameterized filters – SQL injection is
-structurally impossible because no raw SQL is accepted:
+**The threat:** SQL injection is among the most well-known and
+devastating attack classes. An LLM given a raw SQL interface can be
+tricked (via prompt injection in user data or fetched content) into
+running `DROP TABLE`, `UNION SELECT` for data exfiltration, or
+`INSERT`/`UPDATE` to tamper with records. Traditional parameterized
+queries help, but they still require the developer to use them
+correctly.
+
+securetools takes a more radical approach: **the agent never writes SQL
+at all**. The
+[`query_sql_tool()`](https://ian-flores.github.io/securetools/reference/query_sql_tool.md)
+provides a structured interface where the agent specifies a table name,
+column list, and optional filter. The tool constructs the SQL internally
+using parameterized queries. Injection is not merely mitigated – it is
+structurally impossible because the agent has no mechanism to supply raw
+SQL strings:
+
+      Agent Request                           Tool Internals
+      =============                           ==============
+      table = "users"             --->   SELECT name, email
+      columns = "name, email"           FROM users
+      filter_column = "active"          WHERE active = ?
+      filter_value = "1"                 [bound: "1"]
+
+The table and column names are validated against allow-lists. Only
+pre-approved tables can be queried, and column names are checked for SQL
+injection patterns before being interpolated into the query.
 
 ``` r
 library(DBI)
@@ -118,7 +223,18 @@ dbDisconnect(con)
 
 ### URL Fetch Tool
 
-HTTP GET/HEAD with domain allow-lists and rate limiting:
+**The threat:** An agent with unrestricted HTTP access can perform
+Server-Side Request Forgery (SSRF) – making requests to internal
+services (`http://169.254.169.254` for cloud metadata,
+`http://localhost:8080` for internal APIs) that are invisible from the
+public internet. It can also exfiltrate data by POSTing to
+attacker-controlled endpoints, or overwhelm external APIs with unbounded
+request loops.
+
+The URL fetch tool constrains network access with domain allow-lists
+(using glob patterns for subdomain matching), protocol restrictions
+(HTTP/HTTPS only), private IP blocking, response size limits, and rate
+limiting:
 
 ``` r
 fetcher <- fetch_url_tool(
@@ -140,6 +256,13 @@ session$close()
 
 ### Data Profiling
 
+**The threat:** Profiling enormous datasets without limits can exhaust
+memory and crash the host process. The
+[`data_profile_tool()`](https://ian-flores.github.io/securetools/reference/data_profile_tool.md)
+enforces row limits through sampling, ensuring that even
+multi-million-row data frames are summarized safely without resource
+exhaustion.
+
 Compute summary statistics for data frames:
 
 ``` r
@@ -156,7 +279,16 @@ session$close()
 
 ### Plot Tool
 
-Render plots to files with path scoping:
+**The threat:** R’s plotting system is powerful enough to execute
+arbitrary code. An expression like `plot(x); system("curl evil.com")`
+embeds a system call inside what looks like plotting code. Without
+restrictions, the plot tool becomes a general-purpose code execution
+backdoor.
+
+The plot tool evaluates plot expressions in a restricted environment
+where only safe base R and graphics functions are available. Output is
+also path-scoped and size-limited to prevent writing oversized files to
+arbitrary locations:
 
 ``` r
 plotter <- plot_tool(
@@ -179,6 +311,11 @@ session$close()
 ```
 
 ### R Help Lookup
+
+**The threat:** Unrestricted documentation lookup might seem harmless,
+but it can leak information about installed packages and system
+configuration. The `allowed_packages` parameter restricts which packages
+can be queried, keeping the agent’s awareness scoped to what you intend.
 
 The
 [`r_help_tool()`](https://ian-flores.github.io/securetools/reference/r_help_tool.md)
@@ -256,7 +393,19 @@ default values from the tool factory. For example, always specify
 
 ## Rate Limiting
 
-All tool factories accept `max_calls` for lifetime rate limiting:
+Agent loops are inherently unbounded – a ReAct agent will keep calling
+tools until it decides it has an answer (or hits a token limit). Without
+explicit rate limiting, a confused or manipulated agent could make
+thousands of API calls, exhaust disk I/O, or run up cloud costs. Rate
+limiting provides a hard safety boundary independent of the LLM’s
+decision-making.
+
+All tool factories accept `max_calls` for lifetime rate limiting. Some
+tools (like
+[`fetch_url_tool()`](https://ian-flores.github.io/securetools/reference/fetch_url_tool.md))
+also support `max_calls_per_minute` for sliding-window throttling. When
+a limit is hit, the tool returns an error message to the LLM rather than
+silently failing, giving the agent a chance to adjust its strategy:
 
 ``` r
 # Allow only 100 calculator evaluations per session

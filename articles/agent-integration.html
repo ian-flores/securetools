@@ -64,11 +64,21 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
+<p>Building an AI agent that can act on the real world – reading files,
+querying databases, calling APIs – requires combining an LLM’s reasoning
+with executable tools. The challenge is that an LLM’s reasoning is
+probabilistic and influenced by its inputs, which means any tool it can
+call might be called in unexpected or adversarial ways. Agent frameworks
+need to treat tool access as a security boundary, not just a convenience
+layer.</p>
 <p>securetools provides pre-built, security-hardened tools that plug
 directly into <a href="https://github.com/ian-flores/orchestr" class="external-link">orchestr</a> agents. Each
 tool factory returns a <code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> object that
 orchestr’s <code>Agent</code> class converts to an ellmer tool
-automatically when <code>secure = TRUE</code>.</p>
+automatically when <code>secure = TRUE</code>. This means you get
+structural security guarantees (path scoping, parameterized SQL, rate
+limiting) without writing any security code yourself – the tools enforce
+constraints by design.</p>
 <p>This vignette shows how to wire securetools into single-agent ReAct
 loops, multi-agent supervisor graphs, and mixed toolkits. For tool
 factory basics, see <code><a href="../articles/securetools.html">vignette("securetools")</a></code>. For orchestr
@@ -89,11 +99,51 @@ fundamentals, see
 <div class="section level2">
 <h2 id="react-agent-with-tools">ReAct Agent with Tools<a class="anchor" aria-label="anchor" href="#react-agent-with-tools"></a>
 </h2>
-<p>A ReAct agent reasons about a task, calls tools, observes results,
-and repeats until it has an answer. Pass securetools to the
-<code>agent()</code> constructor with <code>secure = TRUE</code> so tool
-calls run inside a securer sandbox.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<p>A ReAct (Reason + Act) agent is the foundational pattern for
+tool-using LLMs. The agent receives a task, <strong>reasons</strong>
+about what to do next, <strong>acts</strong> by calling a tool,
+<strong>observes</strong> the result, and then repeats this cycle until
+it can formulate a final answer. This loop is powerful but inherently
+risky: each iteration gives the LLM another chance to call a tool, and a
+confused or manipulated agent can spiral into unbounded tool use.</p>
+<p>securetools makes ReAct loops safe by ensuring that every tool call
+passes through parent-process validation before reaching the sandbox.
+The LLM can reason freely, but its actions are constrained by the
+structural guarantees of each tool.</p>
+<p>The following diagram shows the execution flow of a ReAct agent with
+securetools:</p>
+<pre><code>  ┌───────────────────────────────────────────────────┐
+  │                   ReAct Loop                      │
+  │                                                   │
+  │   ┌──────────┐    ┌──────────┐    ┌───────────┐   │
+  │   │          │    │          │    │           │   │
+  │   │  Reason  │───&gt;│   Act    │───&gt;│  Observe  │   │
+  │   │  (LLM)   │    │ (tool)   │    │ (result)  │   │
+  │   │          │    │          │    │           │   │
+  │   └──────────┘    └────┬─────┘    └─────┬─────┘   │
+  │        ^               │                │         │
+  │        │               v                │         │
+  │        │        ┌──────────────┐        │         │
+  │        │        │   Validate   │        │         │
+  │        │        │  (parent R)  │        │         │
+  │        │        │  - rate limit│        │         │
+  │        │        │  - allow-list│        │         │
+  │        │        │  - path check│        │         │
+  │        │        └──────┬───────┘        │         │
+  │        │               v                │         │
+  │        │        ┌──────────────┐        │         │
+  │        │        │   Execute    │        │         │
+  │        │        │  (sandbox)   │────────┘         │
+  │        │        └──────────────┘                  │
+  │        │                                          │
+  │        └──────────── loop ────────────────────────┘
+  │                                                   │
+  │   Done? ──yes──&gt; Return final answer              │
+  └───────────────────────────────────────────────────┘</code></pre>
+<p>Pass securetools to the <code>agent()</code> constructor with
+<code>secure = TRUE</code> so tool calls run inside a securer
+sandbox.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create security-scoped tools</span></span>
 <span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculator_tool.html">calculator_tool</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_file_tool.html">read_file_tool</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span></span>
@@ -123,10 +173,44 @@ limits still apply at the parent-process level.</p>
 <div class="section level2">
 <h2 id="supervisor-with-tool-specialists">Supervisor with Tool Specialists<a class="anchor" aria-label="anchor" href="#supervisor-with-tool-specialists"></a>
 </h2>
+<p>The supervisor pattern is the multi-agent equivalent of the principle
+of least privilege. Instead of giving one agent all tools (calculator,
+file I/O, SQL, HTTP), you create <strong>specialist workers</strong>
+that each carry only the tools they need. A supervisor agent routes
+incoming requests to the appropriate worker without itself having direct
+tool access.</p>
+<p>This architecture has several security benefits. First, each worker
+gets its own <code>SecureSession</code>, so rate limits, allowed
+directories, and domain allow-lists are isolated per worker. A
+compromised or confused file worker cannot suddenly start making HTTP
+requests. Second, the supervisor sees only the high-level results from
+workers, not raw tool outputs, which limits information leakage between
+agent boundaries. Third, tool-level constraints can be tuned per-role:
+the data specialist might have generous rate limits while the file
+writer is tightly capped.</p>
+<pre><code>  ┌─────────────────────────────────────────────────┐
+  │                 Supervisor Agent                 │
+  │           (no tools, routes only)                │
+  │                                                  │
+  │    "Read sales.csv, compute mean revenue"        │
+  │                                                  │
+  │         ┌──────────┬──────────┐                  │
+  │         v          v          v                  │
+  │   ┌───────────┐ ┌──────────┐ ┌──────────────┐   │
+  │   │   File    │ │  Data    │ │  Research    │   │
+  │   │ Specialist│ │Specialist│ │  Specialist  │   │
+  │   │           │ │          │ │              │   │
+  │   │ read_file │ │calculator│ │  fetch_url   │   │
+  │   │ write_file│ │ profiler │ │              │   │
+  │   └───────────┘ └──────────┘ └──────────────┘   │
+  │                                                  │
+  │   Each worker has its own SecureSession          │
+  │   with isolated rate limits and allow-lists      │
+  └─────────────────────────────────────────────────┘</code></pre>
 <p>A supervisor graph routes tasks to specialized worker agents. Each
 worker carries its own set of tools. The supervisor decides which worker
 to invoke based on the user’s request.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Data agent: calculation and profiling</span></span>
 <span><span class="va">data_agent</span> <span class="op">&lt;-</span> <span class="fu">agent</span><span class="op">(</span></span>
 <span>  <span class="st">"data_specialist"</span>,</span>
@@ -192,9 +276,31 @@ per worker.</p>
 <div class="section level2">
 <h2 id="rate-limiting-in-agent-loops">Rate Limiting in Agent Loops<a class="anchor" aria-label="anchor" href="#rate-limiting-in-agent-loops"></a>
 </h2>
-<p>Agent loops can generate many tool calls. Use <code>max_calls</code>
-on tool factories to set a hard cap that prevents runaway execution.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>Rate limiting is especially critical in agent loops because the LLM
+controls how many iterations occur. A ReAct agent that misunderstands a
+task might call the calculator 500 times trying to “verify” an answer. A
+research agent fetching URLs might follow links recursively, hammering
+an external API. Without hard caps, agent loops can spiral into runaway
+execution that wastes tokens, exhausts rate limits on external services,
+or generates enormous output that overwhelms downstream processing.</p>
+<p>securetools provides two complementary rate limiting mechanisms:</p>
+<ul>
+<li>
+<strong>Lifetime caps</strong> (<code>max_calls</code>): The total
+number of times a tool can be invoked across the entire session. Once
+hit, every subsequent call returns an error. This is your backstop
+against runaway loops.</li>
+<li>
+<strong>Sliding window</strong> (<code>max_calls_per_minute</code>):
+Limits burst frequency. Even if you allow 1000 lifetime calls,
+restricting to 10 per minute prevents overwhelming external services or
+disk I/O.</li>
+</ul>
+<p>When a rate limit is reached, the tool returns a structured error
+message to the LLM (not an R exception), giving the agent a chance to
+adjust its strategy – for example, by summarizing what it has so far
+instead of fetching more data.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Cap the calculator at 50 calls per agent session</span></span>
 <span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculator_tool.html">calculator_tool</a></span><span class="op">(</span>max_calls <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
 <span></span>
@@ -222,10 +328,12 @@ both runaway costs and accidental API abuse.</p>
 <div class="section level2">
 <h2 id="mixing-securetools-with-custom-tools">Mixing securetools with Custom Tools<a class="anchor" aria-label="anchor" href="#mixing-securetools-with-custom-tools"></a>
 </h2>
-<p>You can combine securetools factories with custom
-<code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> definitions in the same agent. All
-tools run inside the same secure session.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>Real-world agents often need capabilities beyond what securetools
+provides out of the box. You can combine securetools factories with
+custom <code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> definitions in the same
+agent. All tools – both securetools and custom – run inside the same
+secure session and benefit from the same sandbox isolation.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># A custom tool alongside securetools</span></span>
 <span><span class="va">timestamp_tool</span> <span class="op">&lt;-</span> <span class="fu">securer</span><span class="fu">::</span><span class="fu"><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer_tool</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"timestamp"</span>,</span>
