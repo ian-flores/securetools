@@ -58,16 +58,79 @@
 
 <p>Security-hardened tool definitions for R LLM agents. Pre-built <a href="https://github.com/ian-flores/securer" class="external-link">securer</a> tool factories with path scoping, parameterized SQL, domain allow-lists, size limits, and rate limiting.</p>
 <div class="section level2">
+<h2 id="part-of-the-secure-r-dev-ecosystem">Part of the secure-r-dev Ecosystem<a class="anchor" aria-label="anchor" href="#part-of-the-secure-r-dev-ecosystem"></a>
+</h2>
+<p>securetools is part of a 7-package ecosystem for building governed AI agents in R:</p>
+<pre><code>                    ┌─────────────┐
+                    │   securer    │
+                    └──────┬──────┘
+          ┌────────────────┼─────────────────┐
+          │                │                  │
+  ┌───────▼────────┐  ┌───▼──────────┐  ┌───▼──────────────┐
+  │&gt;&gt;&gt; securetools&lt;&lt;&lt;│  │ secureguard  │  │  securecontext   │
+  └───────┬────────┘  └───┬──────────┘  └───┬──────────────┘
+          └────────────────┼─────────────────┘
+                    ┌──────▼───────┐
+                    │   orchestr   │
+                    └──────┬───────┘
+          ┌────────────────┼─────────────────┐
+          │                                  │
+   ┌──────▼──────┐                    ┌──────▼──────┐
+   │ securetrace  │                   │ securebench  │
+   └─────────────┘                    └─────────────┘</code></pre>
+<p>securetools provides pre-built, security-hardened tool definitions that plug directly into securer sessions. It sits in the middle layer alongside secureguard and securecontext, giving agents safe access to files, SQL, URLs, and computation.</p>
+<table class="table">
+<colgroup>
+<col width="60%">
+<col width="40%">
+</colgroup>
+<thead><tr class="header">
+<th>Package</th>
+<th>Role</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://github.com/ian-flores/securer" class="external-link">securer</a></td>
+<td>Sandboxed R execution with tool-call IPC</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/ian-flores/securetools" class="external-link">securetools</a></td>
+<td>Pre-built security-hardened tool definitions</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/ian-flores/secureguard" class="external-link">secureguard</a></td>
+<td>Input/code/output guardrails (injection, PII, secrets)</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/ian-flores/orchestr" class="external-link">orchestr</a></td>
+<td>Graph-based agent orchestration</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/ian-flores/securecontext" class="external-link">securecontext</a></td>
+<td>Document chunking, embeddings, RAG retrieval</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/ian-flores/securetrace" class="external-link">securetrace</a></td>
+<td>Structured tracing, token/cost accounting, JSONL export</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/ian-flores/securebench" class="external-link">securebench</a></td>
+<td>Guardrail benchmarking with precision/recall/F1 metrics</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"ian-flores/securetools"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securetools/">securetools</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securer/" class="external-link">securer</a></span><span class="op">)</span></span>
 <span></span>
