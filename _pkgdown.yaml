@@ -36,3 +36,6 @@ articles:
 - title: Getting Started
   contents:
   - securetools
+- title: Integration
+  contents:
+  - agent-integration
