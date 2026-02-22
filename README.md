@@ -13,6 +13,42 @@ Security-hardened tool definitions for R LLM agents. Pre-built
 path scoping, parameterized SQL, domain allow-lists, size limits, and rate
 limiting.
 
+## Part of the secure-r-dev Ecosystem
+
+securetools is part of a 7-package ecosystem for building governed AI agents in R:
+
+```
+                    ┌─────────────┐
+                    │   securer    │
+                    └──────┬──────┘
+          ┌────────────────┼─────────────────┐
+          │                │                  │
+  ┌───────▼────────┐  ┌───▼──────────┐  ┌───▼──────────────┐
+  │>>> securetools<<<│  │ secureguard  │  │  securecontext   │
+  └───────┬────────┘  └───┬──────────┘  └───┬──────────────┘
+          └────────────────┼─────────────────┘
+                    ┌──────▼───────┐
+                    │   orchestr   │
+                    └──────┬───────┘
+          ┌────────────────┼─────────────────┐
+          │                                  │
+   ┌──────▼──────┐                    ┌──────▼──────┐
+   │ securetrace  │                   │ securebench  │
+   └─────────────┘                    └─────────────┘
+```
+
+securetools provides pre-built, security-hardened tool definitions that plug directly into securer sessions. It sits in the middle layer alongside secureguard and securecontext, giving agents safe access to files, SQL, URLs, and computation.
+
+| Package | Role |
+|---------|------|
+| [securer](https://github.com/ian-flores/securer) | Sandboxed R execution with tool-call IPC |
+| [securetools](https://github.com/ian-flores/securetools) | Pre-built security-hardened tool definitions |
+| [secureguard](https://github.com/ian-flores/secureguard) | Input/code/output guardrails (injection, PII, secrets) |
+| [orchestr](https://github.com/ian-flores/orchestr) | Graph-based agent orchestration |
+| [securecontext](https://github.com/ian-flores/securecontext) | Document chunking, embeddings, RAG retrieval |
+| [securetrace](https://github.com/ian-flores/securetrace) | Structured tracing, token/cost accounting, JSONL export |
+| [securebench](https://github.com/ian-flores/securebench) | Guardrail benchmarking with precision/recall/F1 metrics |
+
 ## Installation
 
 ```r
