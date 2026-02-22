@@ -11,6 +11,14 @@ Security-hardened tool definitions for R LLM agents. Pre-built
 path scoping, parameterized SQL, domain allow-lists, size limits, and
 rate limiting.
 
+## Why securetools?
+
+LLMs can call [`system()`](https://rdrr.io/r/base/system.html), write to
+any path, and run arbitrary SQL. securetools provides pre-built,
+security-hardened tool wrappers that enforce sandboxing, path
+restrictions, and query validation – so you can give AI agents real
+capabilities without giving them the keys to the kingdom.
+
 ## Part of the secure-r-dev Ecosystem
 
 securetools is part of a 7-package ecosystem for building governed AI
@@ -100,13 +108,15 @@ session$close()
   path prefix check prevents symlink escape
 - **AST walking**: Calculator validates expression trees, not strings
 
-## Getting Started
+## Documentation
 
-See the [Getting Started
-vignette](https://ian-flores.github.io/securetools/articles/securetools.html)
-for detailed usage examples of each tool and an overview of the security
-model. Full documentation is available at the [pkgdown
-site](https://ian-flores.github.io/securetools/).
+- [`vignette("securetools")`](https://ian-flores.github.io/securetools/articles/securetools.md)
+  – Getting started: tool factories, security configuration, and usage
+  with securer sessions
+- [`vignette("agent-integration")`](https://ian-flores.github.io/securetools/articles/agent-integration.md)
+  – End-to-end examples wiring securetools into LLM agent workflows
+- [pkgdown site](https://ian-flores.github.io/securetools/) – Full API
+  reference and rendered vignettes
 
 ## Contributing
 

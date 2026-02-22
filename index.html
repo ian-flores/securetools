@@ -51,12 +51,17 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="securetools">securetools<a class="anchor" aria-label="anchor" href="#securetools"></a>
 </h1></div>
+<!-- badges: start -->
+
 <blockquote>
 <p>[!CAUTION] <strong>Alpha software.</strong> This package is part of a broader effort by <a href="https://github.com/ian-flores" class="external-link">Ian Flores Siaca</a> to develop proper AI infrastructure for the R ecosystem. It is under active development and should <strong>not</strong> be used in production until an official release is published. APIs may change without notice.</p>
 </blockquote>
-<!-- badges: start -->
-
 <p>Security-hardened tool definitions for R LLM agents. Pre-built <a href="https://github.com/ian-flores/securer" class="external-link">securer</a> tool factories with path scoping, parameterized SQL, domain allow-lists, size limits, and rate limiting.</p>
+<div class="section level2">
+<h2 id="why-securetools">Why securetools?<a class="anchor" aria-label="anchor" href="#why-securetools"></a>
+</h2>
+<p>LLMs can call <code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code>, write to any path, and run arbitrary SQL. securetools provides pre-built, security-hardened tool wrappers that enforce sandboxing, path restrictions, and query validation – so you can give AI agents real capabilities without giving them the keys to the kingdom.</p>
+</div>
 <div class="section level2">
 <h2 id="part-of-the-secure-r-dev-ecosystem">Part of the secure-r-dev Ecosystem<a class="anchor" aria-label="anchor" href="#part-of-the-secure-r-dev-ecosystem"></a>
 </h2>
@@ -220,9 +225,16 @@
 </ul>
 </div>
 <div class="section level2">
-<h2 id="getting-started">Getting Started<a class="anchor" aria-label="anchor" href="#getting-started"></a>
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>See the <a href="https://ian-flores.github.io/securetools/articles/securetools.html">Getting Started vignette</a> for detailed usage examples of each tool and an overview of the security model. Full documentation is available at the <a href="https://ian-flores.github.io/securetools/">pkgdown site</a>.</p>
+<ul>
+<li>
+<code><a href="articles/securetools.html">vignette("securetools")</a></code> – Getting started: tool factories, security configuration, and usage with securer sessions</li>
+<li>
+<code><a href="articles/agent-integration.html">vignette("agent-integration")</a></code> – End-to-end examples wiring securetools into LLM agent workflows</li>
+<li>
+<a href="https://ian-flores.github.io/securetools/">pkgdown site</a> – Full API reference and rendered vignettes</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
@@ -269,8 +281,10 @@
 <div class="dev-status">
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
-<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
 <li><a href="https://github.com/ian-flores/securetools/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/ian-flores/securetools/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
+<li><a href="https://app.codecov.io/gh/ian-flores/securetools" class="external-link"><img src="https://codecov.io/gh/ian-flores/securetools/graph/badge.svg" alt="Codecov test coverage"></a></li>
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
+<li><a href="https://ian-flores.github.io/securetools/"><img src="https://github.com/ian-flores/securetools/actions/workflows/pkgdown.yaml/badge.svg" alt="pkgdown"></a></li>
 </ul>
 </div>
 
