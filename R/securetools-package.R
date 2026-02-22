@@ -11,6 +11,7 @@
 "_PACKAGE"
 
 ## usethis namespace: start
+#' @importFrom R6 R6Class
 #' @importFrom rlang abort caller_env
 #' @importFrom cli cli_abort cli_warn
 ## usethis namespace: end

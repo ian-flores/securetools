@@ -6,7 +6,7 @@ test_that("NULL max_calls returns NULL", {
 test_that("lifetime limiting enforces max_calls", {
   lim <- new_rate_limiter(max_calls = 3)
 
-  expect_s3_class(lim, "securetools_rate_limiter")
+  expect_s3_class(lim, "SecuretoolsRateLimiter")
 
   # First 3 calls succeed
 

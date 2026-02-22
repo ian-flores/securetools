@@ -67,7 +67,7 @@ r_help_tool <- function(allowed_packages = c("base", "stats", "utils",
 
       # NOTE: Accesses unexported utils function .getHelpFile.
       # This may break in future R versions if the internal API changes.
-      get_help_file <- get(".getHelpFile", envir = asNamespace("utils"))
+      get_help_file <- getFromNamespace(".getHelpFile", "utils")
       help_file <- get_help_file(help_obj)
       txt <- utils::capture.output(
         tools::Rd2txt(help_file, out = stdout(), package = package)

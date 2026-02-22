@@ -1,47 +1,54 @@
 # --- Rate limiting utility (internal) ---
 
+#' @importFrom R6 R6Class
+SecuretoolsRateLimiter <- R6::R6Class("SecuretoolsRateLimiter",
+  public = list(
+    initialize = function(max_calls, window_secs = NULL) {
+      private$max_calls <- max_calls
+      private$window_secs <- window_secs
+      private$timestamps <- numeric(0)
+      private$call_count <- 0L
+    },
+    check = function() {
+      if (is.null(private$window_secs)) {
+        private$call_count <- private$call_count + 1L
+        if (private$call_count > private$max_calls) {
+          cli_abort("Rate limit exceeded: maximum {private$max_calls} lifetime calls.")
+        }
+        return(invisible(TRUE))
+      }
+
+      now <- proc.time()[["elapsed"]]
+      cutoff <- now - private$window_secs
+      private$timestamps <- private$timestamps[private$timestamps > cutoff]
+
+      if (length(private$timestamps) >= private$max_calls) {
+        cli_abort("Rate limit exceeded: {private$max_calls} calls per {private$window_secs}s window")
+      }
+
+      private$timestamps <- c(private$timestamps, now)
+      invisible(TRUE)
+    }
+  ),
+  private = list(
+    max_calls = NULL,
+    window_secs = NULL,
+    timestamps = NULL,
+    call_count = NULL
+  )
+)
+
 #' Create a new rate limiter
 #'
 #' @param max_calls Maximum number of calls allowed. `NULL` disables limiting.
 #' @param window_secs Sliding window in seconds. `NULL` means lifetime limit.
-#' @return A rate limiter environment with class `"securetools_rate_limiter"`,
-#'   or `NULL` if `max_calls` is `NULL`.
+#' @return A `SecuretoolsRateLimiter` R6 object, or `NULL` if `max_calls` is `NULL`.
 #' @noRd
 new_rate_limiter <- function(max_calls = NULL, window_secs = NULL) {
   if (is.null(max_calls)) {
     return(NULL)
   }
-
-  limiter <- new.env(parent = emptyenv())
-  limiter$max_calls <- max_calls
-  limiter$window_secs <- window_secs
-  limiter$timestamps <- numeric(0)
-  limiter$call_count <- 0L
-
-  limiter$check <- function() {
-    if (is.null(limiter$window_secs)) {
-      limiter$call_count <- limiter$call_count + 1L
-      if (limiter$call_count > limiter$max_calls) {
-        cli_abort("Rate limit exceeded: maximum {limiter$max_calls} lifetime calls.")
-      }
-      return(invisible(TRUE))
-    }
-
-    now <- proc.time()[["elapsed"]]
-
-    cutoff <- now - limiter$window_secs
-    limiter$timestamps <- limiter$timestamps[limiter$timestamps > cutoff]
-
-    if (length(limiter$timestamps) >= limiter$max_calls) {
-      cli_abort("Rate limit exceeded: {limiter$max_calls} calls per {limiter$window_secs}s window")
-    }
-
-    limiter$timestamps <- c(limiter$timestamps, now)
-    invisible(TRUE)
-  }
-
-  class(limiter) <- "securetools_rate_limiter"
-  limiter
+  SecuretoolsRateLimiter$new(max_calls = max_calls, window_secs = window_secs)
 }
 
 #' Check a rate limiter (no-op if NULL)
