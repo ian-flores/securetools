@@ -13,4 +13,4 @@ for the underlying tool constructor.
 
 ## Author
 
-**Maintainer**: Ian Flores Siaca <ian.flores.siaca@gmail.com>
+**Maintainer**: Ian Flores Siaca <iflores.siaca@hey.com>
