@@ -9,7 +9,7 @@ test_that("query_sql queries all columns", {
   ))
 
   tool <- query_sql_tool(con, allowed_tables = c("users"))
-  result <- tool$fn(table = "users")
+  result <- tool@fn(table = "users")
 
   expect_equal(nrow(result), 3)
   expect_true("name" %in% names(result))
@@ -26,7 +26,7 @@ test_that("query_sql selects specific columns", {
   ))
 
   tool <- query_sql_tool(con, allowed_tables = c("users"))
-  result <- tool$fn(table = "users", columns = "name, age")
+  result <- tool@fn(table = "users", columns = "name, age")
 
   expect_equal(nrow(result), 3)
   expect_equal(names(result), c("name", "age"))
@@ -43,7 +43,7 @@ test_that("query_sql filters with parameterized query", {
   ))
 
   tool <- query_sql_tool(con, allowed_tables = c("users"))
-  result <- tool$fn(table = "users", filter_column = "name", filter_value = "Bob")
+  result <- tool@fn(table = "users", filter_column = "name", filter_value = "Bob")
 
   expect_equal(nrow(result), 1)
   expect_equal(result$name, "Bob")
@@ -60,7 +60,7 @@ test_that("query_sql rejects table not in allow-list", {
   DBI::dbWriteTable(con, "secrets", data.frame(id = 1, token = "s3cret"))
 
   tool <- query_sql_tool(con, allowed_tables = c("users"))
-  expect_error(tool$fn(table = "secrets"), "not allowed")
+  expect_error(tool@fn(table = "secrets"), "not allowed")
 })
 
 test_that("query_sql rejects SQL injection in table name", {
@@ -72,7 +72,7 @@ test_that("query_sql rejects SQL injection in table name", {
   DBI::dbWriteTable(con, "users", data.frame(id = 1:3, name = c("A", "B", "C")))
 
   tool <- query_sql_tool(con, allowed_tables = c("users"))
-  expect_error(tool$fn(table = "users; DROP TABLE users"), "Invalid table name")
+  expect_error(tool@fn(table = "users; DROP TABLE users"), "Invalid table name")
 })
 
 test_that("query_sql rejects SQL injection in column name", {
@@ -85,7 +85,7 @@ test_that("query_sql rejects SQL injection in column name", {
 
   tool <- query_sql_tool(con, allowed_tables = c("users"))
   expect_error(
-    tool$fn(table = "users", columns = "name; DROP TABLE users"),
+    tool@fn(table = "users", columns = "name; DROP TABLE users"),
     "Invalid column name"
   )
 })
@@ -102,7 +102,7 @@ test_that("query_sql safely handles injection in filter_value via parameterized 
 
   tool <- query_sql_tool(con, allowed_tables = c("users"))
   # Parameterized query treats this as a literal string value, not SQL
-  result <- tool$fn(
+  result <- tool@fn(
     table = "users",
     filter_column = "name",
     filter_value = "'; DROP TABLE users; --"
@@ -125,7 +125,7 @@ test_that("query_sql respects max_rows", {
   ))
 
   tool <- query_sql_tool(con, allowed_tables = c("big"), max_rows = 5)
-  result <- tool$fn(table = "big")
+  result <- tool@fn(table = "big")
 
   expect_equal(nrow(result), 5)
 })
@@ -139,9 +139,9 @@ test_that("query_sql rate limiting works", {
   DBI::dbWriteTable(con, "users", data.frame(id = 1, name = "Alice"))
 
   tool <- query_sql_tool(con, allowed_tables = c("users"), max_calls = 2)
-  tool$fn(table = "users")
-  tool$fn(table = "users")
-  expect_error(tool$fn(table = "users"), "Rate limit")
+  tool@fn(table = "users")
+  tool@fn(table = "users")
+  expect_error(tool@fn(table = "users"), "Rate limit")
 })
 
 test_that("query_sql_tool returns securer_tool object", {
@@ -152,8 +152,8 @@ test_that("query_sql_tool returns securer_tool object", {
   on.exit(DBI::dbDisconnect(con))
 
   tool <- query_sql_tool(con, allowed_tables = c("users"))
-  expect_s3_class(tool, "securer_tool")
-  expect_equal(tool$name, "query_sql")
+  expect_s3_class(tool, "securer::securer_tool")
+  expect_equal(tool@name, "query_sql")
 })
 
 test_that("query_sql handles empty result set", {
@@ -163,6 +163,6 @@ test_that("query_sql handles empty result set", {
   on.exit(DBI::dbDisconnect(con))
   DBI::dbWriteTable(con, "t", data.frame(id = 1:3, name = c("a", "b", "c")))
   tool <- query_sql_tool(conn = con, allowed_tables = "t")
-  result <- tool$fn(table = "t", filter_column = "id", filter_value = "999")
+  result <- tool@fn(table = "t", filter_column = "id", filter_value = "999")
   expect_equal(nrow(result), 0)
 })

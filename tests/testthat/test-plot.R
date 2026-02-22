@@ -3,7 +3,7 @@ test_that("plot_tool generates a PNG file", {
   tool <- plot_tool(allowed_dirs = dir)
   path <- file.path(dir, "test.png")
 
-  result <- tool$fn(
+  result <- tool@fn(
     path = path,
     plot_code = "plot(1:10, 1:10, main = 'Test')"
   )
@@ -18,7 +18,7 @@ test_that("plot_tool generates a PDF file", {
   tool <- plot_tool(allowed_dirs = dir)
   path <- file.path(dir, "test.pdf")
 
-  result <- tool$fn(path = path, plot_code = "plot(1:5)")
+  result <- tool@fn(path = path, plot_code = "plot(1:5)")
   expect_true(file.exists(path))
   expect_equal(result$format, "pdf")
 })
@@ -31,7 +31,7 @@ test_that("plot_tool rejects path outside allowed dirs", {
   path <- file.path(other_dir, "evil.png")
 
   expect_error(
-    tool$fn(path = path, plot_code = "plot(1)"),
+    tool@fn(path = path, plot_code = "plot(1)"),
     "outside allowed"
   )
 })
@@ -41,7 +41,7 @@ test_that("plot_tool uses default dimensions", {
   tool <- plot_tool(allowed_dirs = dir, default_width = 4, default_height = 3)
   path <- file.path(dir, "test.png")
 
-  result <- tool$fn(path = path, plot_code = "plot(1:5)")
+  result <- tool@fn(path = path, plot_code = "plot(1:5)")
   expect_true(file.exists(path))
 })
 
@@ -52,7 +52,7 @@ test_that("plot_tool handles plot code errors", {
 
   # stop() is not in the allowed function list, so AST validation rejects it
   expect_error(
-    tool$fn(path = path, plot_code = "stop('intentional error')"),
+    tool@fn(path = path, plot_code = "stop('intentional error')"),
     "[Nn]ot allowed"
   )
 })
@@ -61,9 +61,9 @@ test_that("plot_tool rate limiting works", {
   dir <- withr::local_tempdir()
   tool <- plot_tool(allowed_dirs = dir, max_calls = 1)
 
-  tool$fn(path = file.path(dir, "a.png"), plot_code = "plot(1)")
+  tool@fn(path = file.path(dir, "a.png"), plot_code = "plot(1)")
   expect_error(
-    tool$fn(path = file.path(dir, "b.png"), plot_code = "plot(1)"),
+    tool@fn(path = file.path(dir, "b.png"), plot_code = "plot(1)"),
     "Rate limit"
   )
 })
@@ -73,7 +73,7 @@ test_that("plot_tool rejects system() in plot_code", {
   tool <- plot_tool(allowed_dirs = dir)
   path <- file.path(dir, "evil.png")
   expect_error(
-    tool$fn(path = path, plot_code = "system('whoami')"),
+    tool@fn(path = path, plot_code = "system('whoami')"),
     "[Nn]ot allowed"
   )
 })
@@ -83,7 +83,7 @@ test_that("plot_tool rejects file.remove() in plot_code", {
   tool <- plot_tool(allowed_dirs = dir)
   path <- file.path(dir, "evil.png")
   expect_error(
-    tool$fn(path = path, plot_code = "file.remove('important.txt')"),
+    tool@fn(path = path, plot_code = "file.remove('important.txt')"),
     "[Nn]ot allowed"
   )
 })
@@ -93,7 +93,7 @@ test_that("plot_tool rejects Sys.getenv() in plot_code", {
   tool <- plot_tool(allowed_dirs = dir)
   path <- file.path(dir, "evil.png")
   expect_error(
-    tool$fn(path = path, plot_code = "Sys.getenv('SECRET')"),
+    tool@fn(path = path, plot_code = "Sys.getenv('SECRET')"),
     "[Nn]ot allowed"
   )
 })
@@ -102,13 +102,13 @@ test_that("plot_tool allows legitimate plotting code", {
   dir <- withr::local_tempdir()
   tool <- plot_tool(allowed_dirs = dir)
   path <- file.path(dir, "ok.png")
-  result <- tool$fn(path = path, plot_code = "plot(1:10, main = 'Test')")
+  result <- tool@fn(path = path, plot_code = "plot(1:10, main = 'Test')")
   expect_true(file.exists(path))
 })
 
 test_that("plot_tool returns securer_tool object", {
   dir <- withr::local_tempdir()
   tool <- plot_tool(allowed_dirs = dir)
-  expect_s3_class(tool, "securer_tool")
-  expect_equal(tool$name, "plot")
+  expect_s3_class(tool, "securer::securer_tool")
+  expect_equal(tool@name, "plot")
 })

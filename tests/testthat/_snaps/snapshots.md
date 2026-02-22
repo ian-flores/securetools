@@ -25,7 +25,7 @@
 # calculator rejection message
 
     Code
-      tool$fn(expression = "system('whoami')")
+      tool@fn(expression = "system('whoami')")
     Condition
       Error in `validate_calc_ast()`:
       ! Function not allowed in calculator: `system()`

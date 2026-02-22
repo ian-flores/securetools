@@ -4,7 +4,7 @@ test_that("read_file_tool reads CSV files", {
   write.csv(data.frame(x = 1:3, y = c("a", "b", "c")), csv_path, row.names = FALSE)
 
   tool <- read_file_tool(allowed_dirs = dir)
-  result <- tool$fn(path = csv_path)
+  result <- tool@fn(path = csv_path)
 
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 3)
@@ -17,7 +17,7 @@ test_that("read_file_tool reads text files", {
   writeLines(c("line1", "line2", "line3"), txt_path)
 
   tool <- read_file_tool(allowed_dirs = dir)
-  result <- tool$fn(path = txt_path)
+  result <- tool@fn(path = txt_path)
 
   expect_equal(result, c("line1", "line2", "line3"))
 })
@@ -28,7 +28,7 @@ test_that("read_file_tool reads RDS files", {
   saveRDS(list(a = 1, b = "hello"), rds_path)
 
   tool <- read_file_tool(allowed_dirs = dir)
-  result <- tool$fn(path = rds_path)
+  result <- tool@fn(path = rds_path)
 
   expect_equal(result, list(a = 1, b = "hello"))
 })
@@ -40,7 +40,7 @@ test_that("read_file_tool reads JSON files", {
   writeLines('{"name": "test", "value": 42}', json_path)
 
   tool <- read_file_tool(allowed_dirs = dir)
-  result <- tool$fn(path = json_path)
+  result <- tool@fn(path = json_path)
 
   expect_equal(result$name, "test")
   expect_equal(result$value, 42)
@@ -53,7 +53,7 @@ test_that("read_file_tool rejects path outside allowed_dirs", {
   writeLines("secret data", txt_path)
 
   tool <- read_file_tool(allowed_dirs = dir)
-  expect_error(tool$fn(path = txt_path), "outside allowed directories")
+  expect_error(tool@fn(path = txt_path), "outside allowed directories")
 })
 
 test_that("read_file_tool rejects path traversal", {
@@ -66,7 +66,7 @@ test_that("read_file_tool rejects path traversal", {
 
   tool <- read_file_tool(allowed_dirs = dir)
   traversal_path <- file.path(dir, "..", "outside.txt")
-  expect_error(tool$fn(path = traversal_path), "outside allowed directories")
+  expect_error(tool@fn(path = traversal_path), "outside allowed directories")
 })
 
 test_that("read_file_tool rejects file exceeding size limit", {
@@ -76,7 +76,7 @@ test_that("read_file_tool rejects file exceeding size limit", {
   writeLines(strrep("x", 200), big_path)
 
   tool <- read_file_tool(allowed_dirs = dir, max_file_size = 100)
-  expect_error(tool$fn(path = big_path), "exceeds limit")
+  expect_error(tool@fn(path = big_path), "exceeds limit")
 })
 
 test_that("detect_format identifies common extensions", {
@@ -99,7 +99,7 @@ test_that("read_file_tool explicit format overrides auto-detection", {
   write.csv(data.frame(x = 1:2), dat_path, row.names = FALSE)
 
   tool <- read_file_tool(allowed_dirs = dir)
-  result <- tool$fn(path = dat_path, format = "csv")
+  result <- tool@fn(path = dat_path, format = "csv")
 
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 2)
@@ -111,9 +111,9 @@ test_that("read_file_tool rate limiting works", {
   writeLines("hello", txt_path)
 
   tool <- read_file_tool(allowed_dirs = dir, max_calls = 2)
-  tool$fn(path = txt_path)
-  tool$fn(path = txt_path)
-  expect_error(tool$fn(path = txt_path), "Rate limit")
+  tool@fn(path = txt_path)
+  tool@fn(path = txt_path)
+  expect_error(tool@fn(path = txt_path), "Rate limit")
 })
 
 test_that("read_file_tool errors on unsupported format", {
@@ -122,20 +122,20 @@ test_that("read_file_tool errors on unsupported format", {
   writeLines("hello", txt_path)
 
   tool <- read_file_tool(allowed_dirs = dir)
-  expect_error(tool$fn(path = txt_path, format = "hdf5"), "Unsupported format")
+  expect_error(tool@fn(path = txt_path, format = "hdf5"), "Unsupported format")
 })
 
 test_that("read_file_tool returns securer_tool object", {
   dir <- make_test_dir()
   tool <- read_file_tool(allowed_dirs = dir)
-  expect_s3_class(tool, "securer_tool")
-  expect_equal(tool$name, "read_file")
+  expect_s3_class(tool, "securer::securer_tool")
+  expect_equal(tool@name, "read_file")
 })
 
 test_that("read_file_tool rejects nonexistent file", {
   dir <- make_test_dir()
   tool <- read_file_tool(allowed_dirs = dir)
-  expect_error(tool$fn(path = file.path(dir, "nope.csv")), "does not exist")
+  expect_error(tool@fn(path = file.path(dir, "nope.csv")), "does not exist")
 })
 
 test_that("read_file_tool handles empty text file", {
@@ -143,6 +143,6 @@ test_that("read_file_tool handles empty text file", {
   f <- file.path(dir, "empty.txt")
   file.create(f)
   tool <- read_file_tool(allowed_dirs = dir)
-  result <- tool$fn(path = f)
+  result <- tool@fn(path = f)
   expect_true(length(result) == 0L || (length(result) == 1L && result == ""))
 })

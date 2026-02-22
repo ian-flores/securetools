@@ -3,15 +3,15 @@
 test_that("fetch_url_tool returns securer_tool object", {
   skip_if_not_installed("httr2")
   tool <- fetch_url_tool(allowed_domains = "example.com")
-  expect_s3_class(tool, "securer_tool")
-  expect_equal(tool$name, "fetch_url")
+  expect_s3_class(tool, "securer::securer_tool")
+  expect_equal(tool@name, "fetch_url")
 })
 
 test_that("fetch_url rejects disallowed domains", {
   skip_if_not_installed("httr2")
   tool <- fetch_url_tool(allowed_domains = c("example.com"))
   expect_error(
-    tool$fn(url = "https://evil.com/data", method = "GET"),
+    tool@fn(url = "https://evil.com/data", method = "GET"),
     "Domain not allowed"
   )
 })
@@ -35,7 +35,7 @@ test_that("fetch_url wildcard domain matching", {
 
   # Base domain should fail domain check
   expect_error(
-    tool$fn(url = "https://github.com/", method = "GET"),
+    tool@fn(url = "https://github.com/", method = "GET"),
     "Domain not allowed"
   )
 })
@@ -44,11 +44,11 @@ test_that("fetch_url rejects non-GET/HEAD methods", {
   skip_if_not_installed("httr2")
   tool <- fetch_url_tool(allowed_domains = "example.com")
   expect_error(
-    tool$fn(url = "https://example.com", method = "POST"),
+    tool@fn(url = "https://example.com", method = "POST"),
     "Only GET and HEAD"
   )
   expect_error(
-    tool$fn(url = "https://example.com", method = "DELETE"),
+    tool@fn(url = "https://example.com", method = "DELETE"),
     "Only GET and HEAD"
   )
 })
@@ -62,10 +62,10 @@ test_that("fetch_url rate limiting works", {
   )
   # Rate limiter runs before domain check, so calls are counted even on failure
 
-  tryCatch(tool$fn(url = "https://nonexistent.invalid/1"), error = function(e) NULL)
-  tryCatch(tool$fn(url = "https://nonexistent.invalid/2"), error = function(e) NULL)
+  tryCatch(tool@fn(url = "https://nonexistent.invalid/1"), error = function(e) NULL)
+  tryCatch(tool@fn(url = "https://nonexistent.invalid/2"), error = function(e) NULL)
   expect_error(
-    tool$fn(url = "https://nonexistent.invalid/3"),
+    tool@fn(url = "https://nonexistent.invalid/3"),
     "Rate limit"
   )
 })
@@ -96,7 +96,7 @@ test_that("fetch_url rejects unparseable URLs", {
   skip_if_not_installed("httr2")
   tool <- fetch_url_tool(allowed_domains = "example.com")
   expect_error(
-    tool$fn(url = "not-a-url", method = "GET"),
+    tool@fn(url = "not-a-url", method = "GET"),
     "Could not parse domain"
   )
 })
@@ -106,7 +106,7 @@ test_that("fetch_url rejects file:// protocol", {
   tool <- fetch_url_tool(allowed_domains = "example.com")
   # file:// URLs have no hostname, so they fail domain parsing before protocol check
   expect_error(
-    tool$fn(url = "file:///etc/passwd", method = "GET"),
+    tool@fn(url = "file:///etc/passwd", method = "GET"),
     "[Pp]rotocol|HTTP|[Dd]omain|parse"
   )
 })
@@ -115,7 +115,7 @@ test_that("fetch_url rejects ftp:// protocol", {
   skip_if_not_installed("httr2")
   tool <- fetch_url_tool(allowed_domains = "example.com")
   expect_error(
-    tool$fn(url = "ftp://example.com/file", method = "GET"),
+    tool@fn(url = "ftp://example.com/file", method = "GET"),
     "[Pp]rotocol|HTTP"
   )
 })

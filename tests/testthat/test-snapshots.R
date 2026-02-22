@@ -25,6 +25,6 @@ test_that("rate limit error message", {
 test_that("calculator rejection message", {
   tool <- calculator_tool()
   expect_snapshot(error = TRUE, {
-    tool$fn(expression = "system('whoami')")
+    tool@fn(expression = "system('whoami')")
   })
 })
