@@ -27,7 +27,7 @@
 #' @seealso \code{\link[securer]{securer_tool}}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tool <- data_profile_tool(max_rows = 50000, max_calls = 10)
 #' }
 #' @export

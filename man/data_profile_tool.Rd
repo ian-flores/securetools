@@ -34,7 +34,7 @@ because the IPC serialization layer converts data frames to lists.
 The tool automatically coerces list input back to a data frame.
 }
 \examples{
-\dontrun{
+\donttest{
 tool <- data_profile_tool(max_rows = 50000, max_calls = 10)
 }
 }

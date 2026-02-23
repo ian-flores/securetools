@@ -140,12 +140,12 @@
 #' @seealso \code{\link[securer]{securer_tool}}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' plt <- plot_tool(allowed_dirs = tempdir())
 #' # Basic scatter plot
-#' plt$fn(
+#' plt@fn(
 #'   path = file.path(tempdir(), "scatter.png"),
-#'   plot_code = "plot(1:10, rnorm(10), main = 'Example')"
+#'   plot_code = "plot(1:10, (1:10)^2, main = 'Example')"
 #' )
 #'
 #' # With custom dimensions and DPI

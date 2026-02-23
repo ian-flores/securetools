@@ -36,13 +36,13 @@ in a minimal environment containing only the allowed functions, with
 \code{emptyenv()} as its parent to prevent access to other R functionality.
 }
 \examples{
-\dontrun{
+\donttest{
 calc <- calculator_tool()
 # Basic arithmetic
-calc$fn(expression = "2 + 3 * 4")
+calc@fn(expression = "2 + 3 * 4")
 
 # Math functions
-calc$fn(expression = "sqrt(144) + log(exp(1))")
+calc@fn(expression = "sqrt(144) + log(exp(1))")
 
 # With rate limiting
 calc <- calculator_tool(max_calls = 100)

@@ -24,7 +24,7 @@
 #' @seealso \code{\link[securer]{securer_tool}}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tool <- r_help_tool(
 #'   allowed_packages = c("base", "stats", "utils"),
 #'   max_lines = 200

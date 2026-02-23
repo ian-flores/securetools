@@ -61,12 +61,12 @@ Supported output formats: png, pdf, svg, jpg/jpeg. The format is
 auto-detected from the file extension by default.
 }
 \examples{
-\dontrun{
+\donttest{
 plt <- plot_tool(allowed_dirs = tempdir())
 # Basic scatter plot
-plt$fn(
+plt@fn(
   path = file.path(tempdir(), "scatter.png"),
-  plot_code = "plot(1:10, rnorm(10), main = 'Example')"
+  plot_code = "plot(1:10, (1:10)^2, main = 'Example')"
 )
 
 # With custom dimensions and DPI

@@ -35,7 +35,7 @@ Help text is rendered as plain text via \code{\link[tools:Rd2HTML]{tools::Rd2txt
 truncated to \code{max_lines} lines.
 }
 \examples{
-\dontrun{
+\donttest{
 tool <- r_help_tool(
   allowed_packages = c("base", "stats", "utils"),
   max_lines = 200

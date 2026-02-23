@@ -53,7 +53,7 @@ are rejected before being moved to the target.
 }
 }
 \examples{
-\dontrun{
+\donttest{
 tool <- write_file_tool(
   allowed_dirs = "/data/exports",
   max_file_size = "5MB",

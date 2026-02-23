@@ -41,7 +41,7 @@
 #' @seealso \code{\link[securer]{securer_tool}}, \code{\link{read_file_tool}}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tool <- write_file_tool(
 #'   allowed_dirs = "/data/exports",
 #'   max_file_size = "5MB",

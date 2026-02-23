@@ -16,7 +16,7 @@ queries.
 \code{\link[securer:securer_tool]{securer::securer_tool()}} for the underlying tool constructor.
 }
 \author{
-\strong{Maintainer}: Ian Flores Siaca \email{iflores.siaca@hey.com}
+\strong{Maintainer}: Ian Flores Siaca \email{iflores.siaca@hey.com} [copyright holder]
 
 }
 \keyword{internal}

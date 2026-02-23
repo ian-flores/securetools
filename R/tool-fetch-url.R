@@ -40,7 +40,7 @@
 #' @seealso \code{\link[securer]{securer_tool}}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' tool <- fetch_url_tool(
 #'   allowed_domains = c("api.example.com", "*.cdn.example.com"),
 #'   max_response_size = "512KB",

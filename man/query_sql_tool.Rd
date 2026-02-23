@@ -39,7 +39,7 @@ can be queried.
 }
 }
 \examples{
-\dontrun{
+\donttest{
 tool <- query_sql_tool(
   conn = DBI::dbConnect(RSQLite::SQLite(), ":memory:"),
   allowed_tables = c("customers", "orders"),
