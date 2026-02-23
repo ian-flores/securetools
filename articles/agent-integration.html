@@ -83,14 +83,14 @@ constraints by design.</p>
 loops, multi-agent supervisor graphs, and mixed toolkits. For tool
 factory basics, see <code><a href="../articles/securetools.html">vignette("securetools")</a></code>. For orchestr
 fundamentals, see
-<code>vignette("quickstart", package = "orchestr")</code>.</p>
+<code><a href="https://ian-flores.github.io/orchestr/articles/quickstart.html" class="external-link">vignette("quickstart", package = "orchestr")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securetools/">securetools</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">orchestr</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/orchestr/" class="external-link">orchestr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ellmer.tidyverse.org" class="external-link">ellmer</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Set your LLM provider API key</span></span>
@@ -140,7 +140,7 @@ securetools:</p>
   │                                                   │
   │   Done? ──yes──&gt; Return final answer              │
   └───────────────────────────────────────────────────┘</code></pre>
-<p>Pass securetools to the <code>agent()</code> constructor with
+<p>Pass securetools to the <code><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent()</a></code> constructor with
 <code>secure = TRUE</code> so tool calls run inside a securer
 sandbox.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -149,7 +149,7 @@ sandbox.</p>
 <span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_file_tool.html">read_file_tool</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Build an agent with tools and secure execution</span></span>
-<span><span class="va">analyst</span> <span class="op">&lt;-</span> <span class="fu">agent</span><span class="op">(</span></span>
+<span><span class="va">analyst</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
 <span>  <span class="st">"analyst"</span>,</span>
 <span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
 <span>    system_prompt <span class="op">=</span> <span class="st">"You are a data analyst. Use your tools to answer questions."</span></span>
@@ -159,7 +159,7 @@ sandbox.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Wrap in a ReAct graph for state management</span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu">react_graph</span><span class="op">(</span><span class="va">analyst</span><span class="op">)</span></span>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/react_graph.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">analyst</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Read the file sales.csv from the data directory and calculate the total revenue."</span></span>
@@ -212,7 +212,7 @@ worker carries its own set of tools. The supervisor decides which worker
 to invoke based on the user’s request.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Data agent: calculation and profiling</span></span>
-<span><span class="va">data_agent</span> <span class="op">&lt;-</span> <span class="fu">agent</span><span class="op">(</span></span>
+<span><span class="va">data_agent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
 <span>  <span class="st">"data_specialist"</span>,</span>
 <span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
 <span>    system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
@@ -228,7 +228,7 @@ to invoke based on the user’s request.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># File agent: reading and writing</span></span>
-<span><span class="va">file_agent</span> <span class="op">&lt;-</span> <span class="fu">agent</span><span class="op">(</span></span>
+<span><span class="va">file_agent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
 <span>  <span class="st">"file_specialist"</span>,</span>
 <span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
 <span>    system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
@@ -245,7 +245,7 @@ to invoke based on the user’s request.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Supervisor routes between specialists</span></span>
-<span><span class="va">supervisor</span> <span class="op">&lt;-</span> <span class="fu">agent</span><span class="op">(</span></span>
+<span><span class="va">supervisor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
 <span>  <span class="st">"supervisor"</span>,</span>
 <span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
 <span>    system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
@@ -256,7 +256,7 @@ to invoke based on the user’s request.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu">supervisor_graph</span><span class="op">(</span></span>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/supervisor_graph.html" class="external-link">supervisor_graph</a></span><span class="op">(</span></span>
 <span>  supervisor <span class="op">=</span> <span class="va">supervisor</span>,</span>
 <span>  workers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    data_specialist <span class="op">=</span> <span class="va">data_agent</span>,</span>
@@ -268,7 +268,7 @@ to invoke based on the user’s request.</p>
 <span>  <span class="st">"Read sales.csv, then calculate the mean of the revenue column."</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The supervisor does not need its own tools – it uses the
-<code>route</code> tool that <code>supervisor_graph()</code> injects
+<code>route</code> tool that <code><a href="https://ian-flores.github.io/orchestr/reference/supervisor_graph.html" class="external-link">supervisor_graph()</a></code> injects
 automatically. Workers each get their own <code>SecureSession</code>, so
 tool-level constraints (allowed directories, rate limits) are isolated
 per worker.</p>
@@ -311,7 +311,7 @@ instead of fetching more data.</p>
 <span>  max_calls_per_minute <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">researcher</span> <span class="op">&lt;-</span> <span class="fu">agent</span><span class="op">(</span></span>
+<span><span class="va">researcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
 <span>  <span class="st">"researcher"</span>,</span>
 <span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
 <span>    system_prompt <span class="op">=</span> <span class="st">"You fetch data from APIs and analyze results."</span></span>
@@ -320,7 +320,7 @@ instead of fetching more data.</p>
 <span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu">react_graph</span><span class="op">(</span><span class="va">researcher</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/react_graph.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">researcher</span><span class="op">)</span></span></code></pre></div>
 <p>When a rate limit is hit, the tool returns an error message to the
 LLM, which can then decide to stop or adjust its approach. This prevents
 both runaway costs and accidental API abuse.</p>
@@ -345,7 +345,7 @@ secure session and benefit from the same sandbox isolation.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Mix custom + securetools</span></span>
-<span><span class="va">assistant</span> <span class="op">&lt;-</span> <span class="fu">agent</span><span class="op">(</span></span>
+<span><span class="va">assistant</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
 <span>  <span class="st">"assistant"</span>,</span>
 <span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
 <span>    system_prompt <span class="op">=</span> <span class="st">"You help with data tasks and can check the current time."</span></span>
@@ -358,7 +358,7 @@ secure session and benefit from the same sandbox isolation.</p>
 <span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu">react_graph</span><span class="op">(</span><span class="va">assistant</span><span class="op">)</span></span>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/react_graph.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">assistant</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"What time is it? Also, what is 2^10?"</span></span>
@@ -375,7 +375,7 @@ and orchestr handles the ellmer conversion automatically.</p>
 <code><a href="../articles/securetools.html">vignette("securetools")</a></code> – tool factory reference and
 security model</li>
 <li>
-<code>vignette("quickstart", package = "orchestr")</code> – agent
+<code><a href="https://ian-flores.github.io/orchestr/articles/quickstart.html" class="external-link">vignette("quickstart", package = "orchestr")</a></code> – agent
 and graph basics</li>
 <li>
 <code><a href="https://ian-flores.github.io/securer/articles/ellmer-integration.html" class="external-link">vignette("ellmer-integration", package = "securer")</a></code> –

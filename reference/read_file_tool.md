@@ -78,11 +78,11 @@ Other tool factories:
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 tool <- read_file_tool(
   allowed_dirs = c("/data/reports", "/data/exports"),
   max_file_size = "10MB",
   max_rows = 5000
 )
-} # }
+# }
 ```

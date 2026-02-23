@@ -85,11 +85,11 @@ Other tool factories:
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 tool <- write_file_tool(
   allowed_dirs = "/data/exports",
   max_file_size = "5MB",
   overwrite = FALSE
 )
-} # }
+# }
 ```

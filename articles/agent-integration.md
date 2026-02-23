@@ -25,7 +25,7 @@ loops, multi-agent supervisor graphs, and mixed toolkits. For tool
 factory basics, see
 [`vignette("securetools")`](https://ian-flores.github.io/securetools/articles/securetools.md).
 For orchestr fundamentals, see
-`vignette("quickstart", package = "orchestr")`.
+[`vignette("quickstart", package = "orchestr")`](https://ian-flores.github.io/orchestr/articles/quickstart.html).
 
 ## Setup
 
@@ -85,8 +85,10 @@ securetools:
       │   Done? ──yes──> Return final answer              │
       └───────────────────────────────────────────────────┘
 
-Pass securetools to the `agent()` constructor with `secure = TRUE` so
-tool calls run inside a securer sandbox.
+Pass securetools to the
+[`agent()`](https://ian-flores.github.io/orchestr/reference/Agent.html)
+constructor with `secure = TRUE` so tool calls run inside a securer
+sandbox.
 
 ``` r
 # Create security-scoped tools
@@ -217,9 +219,11 @@ result <- graph$invoke(list(messages = list(
 ```
 
 The supervisor does not need its own tools – it uses the `route` tool
-that `supervisor_graph()` injects automatically. Workers each get their
-own `SecureSession`, so tool-level constraints (allowed directories,
-rate limits) are isolated per worker.
+that
+[`supervisor_graph()`](https://ian-flores.github.io/orchestr/reference/supervisor_graph.html)
+injects automatically. Workers each get their own `SecureSession`, so
+tool-level constraints (allowed directories, rate limits) are isolated
+per worker.
 
 ## Rate Limiting in Agent Loops
 
@@ -322,7 +326,7 @@ orchestr handles the ellmer conversion automatically.
 
 - [`vignette("securetools")`](https://ian-flores.github.io/securetools/articles/securetools.md)
   – tool factory reference and security model
-- `vignette("quickstart", package = "orchestr")` – agent and graph
-  basics
+- [`vignette("quickstart", package = "orchestr")`](https://ian-flores.github.io/orchestr/articles/quickstart.html)
+  – agent and graph basics
 - [`vignette("ellmer-integration", package = "securer")`](https://ian-flores.github.io/securer/articles/ellmer-integration.html)
   – low-level ellmer wiring

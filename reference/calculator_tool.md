@@ -59,15 +59,17 @@ Other tool factories:
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 calc <- calculator_tool()
 # Basic arithmetic
-calc$fn(expression = "2 + 3 * 4")
+calc@fn(expression = "2 + 3 * 4")
+#> [1] 14
 
 # Math functions
-calc$fn(expression = "sqrt(144) + log(exp(1))")
+calc@fn(expression = "sqrt(144) + log(exp(1))")
+#> [1] 13
 
 # With rate limiting
 calc <- calculator_tool(max_calls = 100)
-} # }
+# }
 ```

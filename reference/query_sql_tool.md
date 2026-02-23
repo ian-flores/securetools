@@ -68,11 +68,11 @@ Other tool factories:
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 tool <- query_sql_tool(
   conn = DBI::dbConnect(RSQLite::SQLite(), ":memory:"),
   allowed_tables = c("customers", "orders"),
   max_rows = 500
 )
-} # }
+# }
 ```

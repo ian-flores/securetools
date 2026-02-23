@@ -93,13 +93,22 @@ Other tool factories:
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 plt <- plot_tool(allowed_dirs = tempdir())
 # Basic scatter plot
-plt$fn(
+plt@fn(
   path = file.path(tempdir(), "scatter.png"),
-  plot_code = "plot(1:10, rnorm(10), main = 'Example')"
+  plot_code = "plot(1:10, (1:10)^2, main = 'Example')"
 )
+#> $path
+#> [1] "/tmp/RtmpWiidMv/scatter.png"
+#> 
+#> $size
+#> [1] 27235
+#> 
+#> $format
+#> [1] "png"
+#> 
 
 # With custom dimensions and DPI
 plt <- plot_tool(
@@ -108,5 +117,5 @@ plt <- plot_tool(
   default_height = 8,
   default_dpi = 300
 )
-} # }
+# }
 ```
