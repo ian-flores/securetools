@@ -101,8 +101,9 @@ fetch_url_tool <- function(allowed_domains, max_response_size = "1MB",
         cli_abort("Only HTTP and HTTPS protocols are allowed, not {.val {scheme}}.")
       }
 
-      # Private IP blocking (SSRF prevention)
-      if (.is_private_ip(domain)) {
+      # Private IP blocking (SSRF prevention) -- check raw IP literals only
+      # (hostnames are checked after DNS resolution below)
+      if (.is_ip_literal(domain) && .is_ip_private(domain)) {
         cli_abort("Requests to private/internal IP addresses are not allowed.")
       }
 
@@ -111,8 +112,23 @@ fetch_url_tool <- function(allowed_domains, max_response_size = "1MB",
         cli_abort("Domain not allowed: {.val {domain}}")
       }
 
-      # Build and execute request
-      req <- httr2::request(url)
+      # DNS rebinding prevention: resolve hostname once, validate the resolved
+      # IP, then connect directly to that IP with a Host header so the server
+      # cannot return a different address on a second lookup.
+      resolved_ip <- tryCatch(utils::nsl(domain), error = function(e) NULL)
+      if (is.null(resolved_ip)) {
+        cli_abort("DNS resolution failed for host: {.val {domain}}")
+      }
+      if (.is_ip_private(resolved_ip)) {
+        cli_abort("Requests to private/internal IP addresses are not allowed.")
+      }
+
+      # Replace hostname with the resolved IP to pin the connection
+      pinned_url <- .pin_url_to_ip(url, parsed, resolved_ip)
+
+      # Build and execute request against the resolved IP
+      req <- httr2::request(pinned_url)
+      req <- httr2::req_headers(req, Host = domain)
       req <- httr2::req_timeout(req, seconds = timeout_secs)
       req <- httr2::req_method(req, method)
       req <- httr2::req_options(req, followlocation = FALSE)
@@ -138,19 +154,52 @@ fetch_url_tool <- function(allowed_domains, max_response_size = "1MB",
   )
 }
 
-#' Check if a hostname resolves to a private/reserved IP address
+#' Check if a string looks like an IP literal (not a hostname)
 #'
-#' @param host Character(1). The hostname to check.
+#' @param host Character(1). A hostname or IP address string.
+#' @return Logical(1). TRUE if the string looks like an IPv4 or IPv6 literal.
+#' @noRd
+.is_ip_literal <- function(host) {
+  # IPv6 literal (contains colon)
+  if (grepl(":", host, fixed = TRUE)) return(TRUE)
+  # IPv4 literal (all dot-separated parts are integers)
+  parts <- strsplit(host, ".", fixed = TRUE)[[1]]
+  if (length(parts) != 4L) return(FALSE)
+  all(!is.na(suppressWarnings(as.integer(parts))))
+}
+
+#' Check if a hostname or IP string is a private/reserved address
+#'
+#' Resolves hostnames via `nsl()` first, then checks the IP. For raw IP
+#' literals the resolution step is skipped.
+#'
+#' @param host Character(1). A hostname or IP address string.
 #' @return Logical(1).
 #' @noRd
 .is_private_ip <- function(host) {
-  # Resolve hostname to IP
   ip <- tryCatch(utils::nsl(host), error = function(e) NULL)
-  if (is.null(ip)) return(FALSE) # Can't resolve, let httr2 handle the error
+  if (is.null(ip)) return(FALSE)
+  .is_ip_private(ip)
+}
 
-  # Check private/reserved ranges
+#' Check if an IP address string falls in a private/reserved range
+#'
+#' Pure check on an already-resolved IP address -- no DNS resolution.
+#'
+#' @param ip Character(1). An IPv4 or IPv6 address string.
+#' @return Logical(1).
+#' @noRd
+.is_ip_private <- function(ip) {
+  # IPv6 (contains colon) -- deny all by default
+  if (grepl(":", ip, fixed = TRUE)) return(TRUE)
+
+  # Only check strings that look like IPv4 addresses (all digits and dots).
+  # Hostnames contain letters and should not be classified here.
+
+  if (!grepl("^[0-9.]+$", ip)) return(FALSE)
+
   octets <- as.integer(strsplit(ip, ".", fixed = TRUE)[[1]])
-  if (length(octets) != 4) return(FALSE) # IPv6 or malformed -- be conservative
+  if (length(octets) != 4) return(TRUE) # Malformed -- deny by default
 
   # 127.0.0.0/8
   if (octets[1] == 127L) return(TRUE)
@@ -166,6 +215,18 @@ fetch_url_tool <- function(allowed_domains, max_response_size = "1MB",
   if (all(octets == 0L)) return(TRUE)
 
   FALSE
+}
+
+#' Replace the hostname in a URL with a resolved IP address
+#'
+#' @param url Character(1). The original URL string.
+#' @param parsed List returned by `httr2::url_parse()`.
+#' @param ip Character(1). The resolved IP to substitute.
+#' @return Character(1). The URL with hostname replaced by the IP.
+#' @noRd
+.pin_url_to_ip <- function(url, parsed, ip) {
+  parsed$hostname <- ip
+  httr2::url_build(parsed)
 }
 
 #' Check if a domain matches an allow-list entry

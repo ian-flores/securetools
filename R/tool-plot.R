@@ -240,6 +240,9 @@ plot_tool <- function(allowed_dirs, default_width = 8, default_height = 6,
       # Move to target
       file.copy(tmp, resolved, overwrite = TRUE)
 
+      # Re-validate after write to catch symlink TOCTOU attacks
+      validate_written_path(resolved, allowed_dirs)
+
       list(
         path = resolved,
         size = file.info(resolved)$size,

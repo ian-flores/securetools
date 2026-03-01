@@ -203,3 +203,22 @@ test_that("write_file_tool rejects symlink escape", {
     "[Oo]utside|not allowed"
   )
 })
+
+test_that("validate_written_path catches post-write symlink escape", {
+  skip_on_os("windows")
+  allowed <- withr::local_tempdir()
+  outside <- withr::local_tempdir()
+
+  # Simulate: a file is written inside allowed dir, but real path is outside
+  real_file <- file.path(outside, "escaped.txt")
+  writeLines("data", real_file)
+  link <- file.path(allowed, "link.txt")
+  file.symlink(real_file, link)
+
+  expect_error(
+    securetools:::validate_written_path(link, allowed),
+    "[Oo]utside"
+  )
+  # validate_written_path should have removed the symlink target
+  expect_false(file.exists(link))
+})

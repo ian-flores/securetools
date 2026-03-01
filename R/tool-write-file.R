@@ -128,6 +128,9 @@ write_file_tool <- function(allowed_dirs, max_file_size = "10MB",
       # Move to target
       file.copy(tmp, resolved, overwrite = TRUE)
 
+      # Re-validate after write to catch symlink TOCTOU attacks
+      validate_written_path(resolved, allowed_dirs)
+
       invisible(list(path = resolved, size = file.info(resolved)$size, format = format))
     },
     args = list(path = "character", content = "list", format = "character")

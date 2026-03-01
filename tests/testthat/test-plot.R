@@ -112,3 +112,16 @@ test_that("plot_tool returns securer_tool object", {
   expect_s3_class(tool, "securer::securer_tool")
   expect_equal(tool@name, "plot")
 })
+
+test_that("plot_tool rejects symlink escape", {
+  skip_on_os("windows")
+  dir <- withr::local_tempdir()
+  outside <- withr::local_tempdir()
+  link <- file.path(dir, "escape")
+  file.symlink(outside, link)
+  tool <- plot_tool(allowed_dirs = dir)
+  expect_error(
+    tool@fn(path = file.path(link, "evil.png"), plot_code = "plot(1)"),
+    "[Oo]utside|not allowed"
+  )
+})
