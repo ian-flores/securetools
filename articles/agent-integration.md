@@ -2,27 +2,25 @@
 
 ## Overview
 
-Building an AI agent that can act on the real world – reading files,
-querying databases, calling APIs – requires combining an LLM’s reasoning
-with executable tools. The challenge is that an LLM’s reasoning is
-probabilistic and influenced by its inputs, which means any tool it can
-call might be called in unexpected or adversarial ways. Agent frameworks
-need to treat tool access as a security boundary, not just a convenience
-layer.
+An AI agent that reads files, queries databases, and calls APIs combines
+an LLM’s reasoning with executable tools. Because that reasoning is
+probabilistic and shaped by its inputs, any tool the LLM can call might
+be called in unexpected or adversarial ways. Agent frameworks must treat
+tool access as a security boundary.
 
 securetools provides pre-built, security-hardened tools that plug
 directly into [orchestr](https://github.com/ian-flores/orchestr) agents.
 Each tool factory returns a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
 object that orchestr’s `Agent` class converts to an ellmer tool
-automatically when `secure = TRUE`. This means you get structural
-security guarantees (path scoping, parameterized SQL, rate limiting)
-without writing any security code yourself – the tools enforce
-constraints by design.
+automatically when `secure = TRUE`. You get structural security
+guarantees (path scoping, parameterized SQL, rate limiting) without
+writing any security code yourself. The tools enforce constraints by
+design.
 
-This vignette shows how to wire securetools into single-agent ReAct
-loops, multi-agent supervisor graphs, and mixed toolkits. For tool
-factory basics, see
+The examples below wire securetools into single-agent ReAct loops,
+multi-agent supervisor graphs, and mixed toolkits. For tool factory
+basics, see
 [`vignette("securetools")`](https://ian-flores.github.io/securetools/articles/securetools.md).
 For orchestr fundamentals, see
 [`vignette("quickstart", package = "orchestr")`](https://ian-flores.github.io/orchestr/articles/quickstart.html).
@@ -38,20 +36,17 @@ library(ellmer)
 Sys.setenv(ANTHROPIC_API_KEY = "your-key-here")
 ```
 
-## ReAct Agent with Tools
+## ReAct agent with tools
 
-A ReAct (Reason + Act) agent is the foundational pattern for tool-using
-LLMs. The agent receives a task, **reasons** about what to do next,
-**acts** by calling a tool, **observes** the result, and then repeats
-this cycle until it can formulate a final answer. This loop is powerful
-but inherently risky: each iteration gives the LLM another chance to
-call a tool, and a confused or manipulated agent can spiral into
-unbounded tool use.
+A ReAct (Reason + Act) agent is the standard pattern for tool-using
+LLMs. The agent receives a task, reasons about what to do next, acts by
+calling a tool, observes the result, and repeats until it has a final
+answer. Each iteration gives the LLM another chance to call a tool. A
+confused or manipulated agent can spiral into unbounded tool use.
 
-securetools makes ReAct loops safe by ensuring that every tool call
-passes through parent-process validation before reaching the sandbox.
-The LLM can reason freely, but its actions are constrained by the
-structural guarantees of each tool.
+securetools makes ReAct loops safe by routing every tool call through
+parent-process validation before it reaches the sandbox. The LLM reasons
+freely; its actions are constrained by the guarantees of each tool.
 
 The following diagram shows the execution flow of a ReAct agent with
 securetools:
@@ -118,22 +113,20 @@ scenes. Each `securer_tool` is converted to an ellmer tool definition
 that executes inside the sandbox. Path scoping, AST validation, and rate
 limits still apply at the parent-process level.
 
-## Supervisor with Tool Specialists
+## Supervisor with tool specialists
 
-The supervisor pattern is the multi-agent equivalent of the principle of
-least privilege. Instead of giving one agent all tools (calculator, file
-I/O, SQL, HTTP), you create **specialist workers** that each carry only
-the tools they need. A supervisor agent routes incoming requests to the
-appropriate worker without itself having direct tool access.
+The supervisor pattern applies the principle of least privilege across
+multiple agents. Specialist workers each carry only the tools they need.
+A supervisor agent routes incoming requests to the appropriate worker
+without itself holding direct tool access.
 
-This architecture has several security benefits. First, each worker gets
-its own `SecureSession`, so rate limits, allowed directories, and domain
-allow-lists are isolated per worker. A compromised or confused file
-worker cannot suddenly start making HTTP requests. Second, the
-supervisor sees only the high-level results from workers, not raw tool
-outputs, which limits information leakage between agent boundaries.
-Third, tool-level constraints can be tuned per-role: the data specialist
-might have generous rate limits while the file writer is tightly capped.
+Each worker gets its own `SecureSession`, so rate limits, allowed
+directories, and domain allow-lists are isolated per worker. A
+compromised file worker cannot start making HTTP requests. The
+supervisor sees only high-level results, not raw tool outputs, which
+limits information leakage across agent boundaries. You can also tune
+constraints per role: generous rate limits for the data specialist,
+tight caps for the file writer.
 
       ┌─────────────────────────────────────────────────┐
       │                 Supervisor Agent                 │
@@ -155,9 +148,8 @@ might have generous rate limits while the file writer is tightly capped.
       │   with isolated rate limits and allow-lists      │
       └─────────────────────────────────────────────────┘
 
-A supervisor graph routes tasks to specialized worker agents. Each
-worker carries its own set of tools. The supervisor decides which worker
-to invoke based on the user’s request.
+A supervisor graph routes tasks to specialized worker agents, each
+carrying its own set of tools.
 
 ``` r
 # Data agent: calculation and profiling
@@ -218,36 +210,34 @@ result <- graph$invoke(list(messages = list(
 )))
 ```
 
-The supervisor does not need its own tools – it uses the `route` tool
-that
+The supervisor needs no tools of its own; it uses the `route` tool that
 [`supervisor_graph()`](https://ian-flores.github.io/orchestr/reference/supervisor_graph.html)
-injects automatically. Workers each get their own `SecureSession`, so
-tool-level constraints (allowed directories, rate limits) are isolated
-per worker.
+injects automatically. Workers each get their own `SecureSession`,
+isolating allowed directories and rate limits per worker.
 
-## Rate Limiting in Agent Loops
+## Rate limiting in agent loops
 
-Rate limiting is especially critical in agent loops because the LLM
-controls how many iterations occur. A ReAct agent that misunderstands a
-task might call the calculator 500 times trying to “verify” an answer. A
-research agent fetching URLs might follow links recursively, hammering
-an external API. Without hard caps, agent loops can spiral into runaway
-execution that wastes tokens, exhausts rate limits on external services,
-or generates enormous output that overwhelms downstream processing.
+Rate limiting matters in agent loops because the LLM controls how many
+iterations occur. A ReAct agent that misunderstands a task might call
+the calculator 500 times trying to “verify” an answer. A research agent
+fetching URLs might follow links recursively, hammering an external API.
+Without hard caps, these loops become runaway execution: wasted tokens,
+exhausted external rate limits, enormous output that overwhelms
+downstream processing.
 
-securetools provides two complementary rate limiting mechanisms:
+securetools has two rate limiting mechanisms:
 
-- **Lifetime caps** (`max_calls`): The total number of times a tool can
-  be invoked across the entire session. Once hit, every subsequent call
-  returns an error. This is your backstop against runaway loops.
-- **Sliding window** (`max_calls_per_minute`): Limits burst frequency.
-  Even if you allow 1000 lifetime calls, restricting to 10 per minute
+- Lifetime caps (`max_calls`): the total number of times a tool can be
+  invoked across the entire session. Once hit, every subsequent call
+  returns an error. This is the backstop against runaway loops.
+- Sliding window (`max_calls_per_minute`): limits burst frequency. Even
+  if you allow 1000 lifetime calls, restricting to 10 per minute
   prevents overwhelming external services or disk I/O.
 
 When a rate limit is reached, the tool returns a structured error
 message to the LLM (not an R exception), giving the agent a chance to
-adjust its strategy – for example, by summarizing what it has so far
-instead of fetching more data.
+adjust its strategy. It might summarize what it has so far instead of
+fetching more data.
 
 ``` r
 # Cap the calculator at 50 calls per agent session
@@ -272,19 +262,16 @@ researcher <- agent(
 graph <- react_graph(researcher)
 ```
 
-When a rate limit is hit, the tool returns an error message to the LLM,
-which can then decide to stop or adjust its approach. This prevents both
-runaway costs and accidental API abuse.
+When a limit is hit, the tool returns an error message to the LLM, which
+can then stop or adjust its approach.
 
-## Mixing securetools with Custom Tools
+## Mixing securetools with custom tools
 
-Real-world agents often need capabilities beyond what securetools
-provides out of the box. You can combine securetools factories with
-custom
+Most agents need capabilities beyond what securetools provides directly.
+You can combine securetools factories with custom
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
-definitions in the same agent. All tools – both securetools and custom –
-run inside the same secure session and benefit from the same sandbox
-isolation.
+definitions in the same agent. All tools run inside the same secure
+session and share the same sandbox isolation.
 
 ``` r
 # A custom tool alongside securetools
@@ -322,11 +309,11 @@ Custom tools follow the same security model as securetools factories:
 the `fn` runs in the parent process (not inside the sandbox), and
 orchestr handles the ellmer conversion automatically.
 
-## Next Steps
+## Next steps
 
-- [`vignette("securetools")`](https://ian-flores.github.io/securetools/articles/securetools.md)
-  – tool factory reference and security model
-- [`vignette("quickstart", package = "orchestr")`](https://ian-flores.github.io/orchestr/articles/quickstart.html)
-  – agent and graph basics
-- [`vignette("ellmer-integration", package = "securer")`](https://ian-flores.github.io/securer/articles/ellmer-integration.html)
-  – low-level ellmer wiring
+- [`vignette("securetools")`](https://ian-flores.github.io/securetools/articles/securetools.md):
+  tool factory reference and security model
+- [`vignette("quickstart", package = "orchestr")`](https://ian-flores.github.io/orchestr/articles/quickstart.html):
+  agent and graph basics
+- [`vignette("ellmer-integration", package = "securer")`](https://ian-flores.github.io/securer/articles/ellmer-integration.html):
+  low-level ellmer wiring
