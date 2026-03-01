@@ -200,6 +200,8 @@ test_that("fetch_url aborts when DNS resolution fails", {
 
 test_that("fetch_url detects private IP on resolved address", {
   skip_if_not_installed("httr2")
+  # nsl() doesn't resolve "localhost" on Windows; skip there
+  skip_on_os("windows")
   # localhost resolves to 127.0.0.1 -- the resolved IP must be caught
   tool <- fetch_url_tool(allowed_domains = "localhost")
   expect_error(
