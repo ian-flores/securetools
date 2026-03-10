@@ -178,76 +178,88 @@ plot_tool <- function(allowed_dirs, default_width = 8, default_height = 6,
     name = "plot",
     description = "Render a plot from R code to a file. Supports png, pdf, svg, jpg formats.",
     fn = function(path, plot_code, width = NULL, height = NULL, format = "auto") {
-      check_rate_limit(limiter)
+      .do_plot <- function() {
+        check_rate_limit(limiter)
 
-      resolved <- validate_path(path, allowed_dirs, must_exist = FALSE)
+        resolved <- validate_path(path, allowed_dirs, must_exist = FALSE)
 
-      # Use defaults if width/height are not provided
-      if (is.null(width)) {
-        width <- default_width
-      }
-      if (is.null(height)) {
-        height <- default_height
-      }
+        # Use defaults if width/height are not provided
+        if (is.null(width)) {
+          width <- default_width
+        }
+        if (is.null(height)) {
+          height <- default_height
+        }
 
-      # Detect format from extension
-      if (identical(format, "auto")) {
-        ext <- tolower(tools::file_ext(path))
-        format <- switch(ext,
-          png = "png",
-          pdf = "pdf",
-          svg = "svg",
-          jpg = , jpeg = "jpg",
-          cli_abort("Cannot auto-detect plot format for extension: {.val {ext}}")
+        # Detect format from extension
+        if (identical(format, "auto")) {
+          ext <- tolower(tools::file_ext(path))
+          format <- switch(ext,
+            png = "png",
+            pdf = "pdf",
+            svg = "svg",
+            jpg = , jpeg = "jpg",
+            cli_abort("Cannot auto-detect plot format for extension: {.val {ext}}")
+          )
+        }
+
+        # Parse and validate plot code AST
+        parsed <- tryCatch(
+          parse(text = plot_code),
+          error = function(e) cli_abort("Invalid plot code: {e$message}")
+        )
+        for (i in seq_along(parsed)) {
+          .validate_plot_ast(parsed[[i]])
+        }
+
+        # Render to temp file
+        tmp <- tempfile(fileext = paste0(".", format), tmpdir = dirname(resolved))
+        on.exit(unlink(tmp), add = TRUE)
+
+        # Open device
+        switch(format,
+          png = grDevices::png(tmp, width = width, height = height,
+                               units = "in", res = default_dpi),
+          pdf = grDevices::pdf(tmp, width = width, height = height),
+          svg = grDevices::svg(tmp, width = width, height = height),
+          jpg = grDevices::jpeg(tmp, width = width, height = height,
+                                units = "in", res = default_dpi),
+          cli_abort("Unsupported plot format: {.val {format}}")
+        )
+
+        tryCatch({
+          eval(parsed, envir = new.env(parent = baseenv()))
+          grDevices::dev.off()
+        }, error = function(e) {
+          tryCatch(grDevices::dev.off(), error = function(e2) NULL)
+          cli_abort("Plot code failed: {e$message}")
+        })
+
+        # Check size
+        validate_file_size(tmp, max_bytes)
+
+        # Move to target
+        file.copy(tmp, resolved, overwrite = TRUE)
+
+        # Re-validate after write to catch symlink TOCTOU attacks
+        validate_written_path(resolved, allowed_dirs)
+
+        list(
+          path = resolved,
+          size = file.info(resolved)$size,
+          format = format
         )
       }
 
-      # Parse and validate plot code AST
-      parsed <- tryCatch(
-        parse(text = plot_code),
-        error = function(e) cli_abort("Invalid plot code: {e$message}")
-      )
-      for (i in seq_along(parsed)) {
-        .validate_plot_ast(parsed[[i]])
+      if (.trace_active()) {
+        securetrace::with_span("tool.plot", type = "tool", {
+          result <- .do_plot()
+          .span_event("tool.result", list(tool = "plot"))
+          result
+        })
+      } else {
+        .do_plot()
       }
-
-      # Render to temp file
-      tmp <- tempfile(fileext = paste0(".", format), tmpdir = dirname(resolved))
-      on.exit(unlink(tmp), add = TRUE)
-
-      # Open device
-      switch(format,
-        png = grDevices::png(tmp, width = width, height = height,
-                             units = "in", res = default_dpi),
-        pdf = grDevices::pdf(tmp, width = width, height = height),
-        svg = grDevices::svg(tmp, width = width, height = height),
-        jpg = grDevices::jpeg(tmp, width = width, height = height,
-                              units = "in", res = default_dpi),
-        cli_abort("Unsupported plot format: {.val {format}}")
-      )
-
-      tryCatch({
-        eval(parsed, envir = new.env(parent = baseenv()))
-        grDevices::dev.off()
-      }, error = function(e) {
-        tryCatch(grDevices::dev.off(), error = function(e2) NULL)
-        cli_abort("Plot code failed: {e$message}")
-      })
-
-      # Check size
-      validate_file_size(tmp, max_bytes)
-
-      # Move to target
-      file.copy(tmp, resolved, overwrite = TRUE)
-
-      # Re-validate after write to catch symlink TOCTOU attacks
-      validate_written_path(resolved, allowed_dirs)
-
-      list(
-        path = resolved,
-        size = file.info(resolved)$size,
-        format = format
-      )
     },
     args = list(
       path = "character",

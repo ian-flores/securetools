@@ -74,81 +74,93 @@ fetch_url_tool <- function(allowed_domains, max_response_size = "1MB",
       "Domain restrictions and rate limits apply."
     ),
     fn = function(url, method = "GET") {
-      check_rate_limit(lifetime_limiter)
-      check_rate_limit(minute_limiter)
+      .do_fetch <- function() {
+        check_rate_limit(lifetime_limiter)
+        check_rate_limit(minute_limiter)
 
-      # Validate method
-      method <- toupper(method)
-      if (!method %in% c("GET", "HEAD")) {
-        cli_abort("Only GET and HEAD methods are allowed, got: {.val {method}}")
-      }
+        # Validate method
+        method <- toupper(method)
+        if (!method %in% c("GET", "HEAD")) {
+          cli_abort("Only GET and HEAD methods are allowed, got: {.val {method}}")
+        }
 
-      # Parse and validate domain
-      parsed <- tryCatch(
-        httr2::url_parse(url),
-        error = function(e) {
+        # Parse and validate domain
+        parsed <- tryCatch(
+          httr2::url_parse(url),
+          error = function(e) {
+            cli_abort("Could not parse domain from URL: {.url {url}}")
+          }
+        )
+        domain <- parsed$hostname
+        if (is.null(domain) || !nzchar(domain)) {
           cli_abort("Could not parse domain from URL: {.url {url}}")
         }
-      )
-      domain <- parsed$hostname
-      if (is.null(domain) || !nzchar(domain)) {
-        cli_abort("Could not parse domain from URL: {.url {url}}")
-      }
 
-      # Protocol validation
-      scheme <- tolower(parsed$scheme %||% "")
-      if (!scheme %in% c("http", "https")) {
-        cli_abort("Only HTTP and HTTPS protocols are allowed, not {.val {scheme}}.")
-      }
+        # Protocol validation
+        scheme <- tolower(parsed$scheme %||% "")
+        if (!scheme %in% c("http", "https")) {
+          cli_abort("Only HTTP and HTTPS protocols are allowed, not {.val {scheme}}.")
+        }
 
-      # Private IP blocking (SSRF prevention) -- check raw IP literals only
-      # (hostnames are checked after DNS resolution below)
-      if (.is_ip_literal(domain) && .is_ip_private(domain)) {
-        cli_abort("Requests to private/internal IP addresses are not allowed.")
-      }
+        # Private IP blocking (SSRF prevention) -- check raw IP literals only
+        # (hostnames are checked after DNS resolution below)
+        if (.is_ip_literal(domain) && .is_ip_private(domain)) {
+          cli_abort("Requests to private/internal IP addresses are not allowed.")
+        }
 
-      # Domain allow-list check
-      if (!domain_matches(domain, allowed_domains)) {
-        cli_abort("Domain not allowed: {.val {domain}}")
-      }
+        # Domain allow-list check
+        if (!domain_matches(domain, allowed_domains)) {
+          cli_abort("Domain not allowed: {.val {domain}}")
+        }
 
-      # DNS rebinding prevention: resolve hostname once, validate the resolved
-      # IP, then connect directly to that IP with a Host header so the server
-      # cannot return a different address on a second lookup.
-      resolved_ip <- tryCatch(utils::nsl(domain), error = function(e) NULL)
-      if (is.null(resolved_ip)) {
-        cli_abort("DNS resolution failed for host: {.val {domain}}")
-      }
-      if (.is_ip_private(resolved_ip)) {
-        cli_abort("Requests to private/internal IP addresses are not allowed.")
-      }
+        # DNS rebinding prevention: resolve hostname once, validate the resolved
+        # IP, then connect directly to that IP with a Host header so the server
+        # cannot return a different address on a second lookup.
+        resolved_ip <- tryCatch(utils::nsl(domain), error = function(e) NULL)
+        if (is.null(resolved_ip)) {
+          cli_abort("DNS resolution failed for host: {.val {domain}}")
+        }
+        if (.is_ip_private(resolved_ip)) {
+          cli_abort("Requests to private/internal IP addresses are not allowed.")
+        }
 
-      # Replace hostname with the resolved IP to pin the connection
-      pinned_url <- .pin_url_to_ip(url, parsed, resolved_ip)
+        # Replace hostname with the resolved IP to pin the connection
+        pinned_url <- .pin_url_to_ip(url, parsed, resolved_ip)
 
-      # Build and execute request against the resolved IP
-      req <- httr2::request(pinned_url)
-      req <- httr2::req_headers(req, Host = domain)
-      req <- httr2::req_timeout(req, seconds = timeout_secs)
-      req <- httr2::req_method(req, method)
-      req <- httr2::req_options(req, followlocation = FALSE)
-      req <- httr2::req_options(req, maxfilesize = max_bytes)
+        # Build and execute request against the resolved IP
+        req <- httr2::request(pinned_url)
+        req <- httr2::req_headers(req, Host = domain)
+        req <- httr2::req_timeout(req, seconds = timeout_secs)
+        req <- httr2::req_method(req, method)
+        req <- httr2::req_options(req, followlocation = FALSE)
+        req <- httr2::req_options(req, maxfilesize = max_bytes)
 
-      resp <- httr2::req_perform(req)
+        resp <- httr2::req_perform(req)
 
-      # Check response size (belt-and-suspenders backup)
-      body <- httr2::resp_body_string(resp)
-      if (nchar(body, type = "bytes") > max_bytes) {
-        cli_abort(
-          "Response size ({nchar(body, type = 'bytes')} bytes) exceeds limit ({max_bytes} bytes)"
+        # Check response size (belt-and-suspenders backup)
+        body <- httr2::resp_body_string(resp)
+        if (nchar(body, type = "bytes") > max_bytes) {
+          cli_abort(
+            "Response size ({nchar(body, type = 'bytes')} bytes) exceeds limit ({max_bytes} bytes)"
+          )
+        }
+
+        list(
+          status = httr2::resp_status(resp),
+          headers = as.list(httr2::resp_headers(resp)),
+          body = body
         )
       }
 
-      list(
-        status = httr2::resp_status(resp),
-        headers = as.list(httr2::resp_headers(resp)),
-        body = body
-      )
+      if (.trace_active()) {
+        securetrace::with_span("tool.fetch_url", type = "tool", {
+          result <- .do_fetch()
+          .span_event("tool.result", list(tool = "fetch_url"))
+          result
+        })
+      } else {
+        .do_fetch()
+      }
     },
     args = list(url = "character", method = "character")
   )

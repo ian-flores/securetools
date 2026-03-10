@@ -119,26 +119,38 @@ calculator_tool <- function(max_calls = NULL) {
       "Only arithmetic, math functions, and numeric literals are allowed."
     ),
     fn = function(expression) {
-      check_rate_limit(limiter)
+      .do_calc <- function() {
+        check_rate_limit(limiter)
 
-      # Parse the expression
-      parsed <- tryCatch(
-        parse(text = expression),
-        error = function(e) cli_abort("Invalid expression: {e$message}")
-      )
-
-      # Reject multiple expressions (e.g. "1; system('whoami')")
-      if (length(parsed) != 1L) {
-        cli_abort(
-          "Expression must be a single expression, got {length(parsed)}."
+        # Parse the expression
+        parsed <- tryCatch(
+          parse(text = expression),
+          error = function(e) cli_abort("Invalid expression: {e$message}")
         )
+
+        # Reject multiple expressions (e.g. "1; system('whoami')")
+        if (length(parsed) != 1L) {
+          cli_abort(
+            "Expression must be a single expression, got {length(parsed)}."
+          )
+        }
+
+        # AST walk to validate
+        validate_calc_ast(parsed[[1]])
+
+        # Safe to evaluate in minimal environment
+        eval(parsed, envir = .calc_eval_env)
       }
 
-      # AST walk to validate
-      validate_calc_ast(parsed[[1]])
-
-      # Safe to evaluate in minimal environment
-      eval(parsed, envir = .calc_eval_env)
+      if (.trace_active()) {
+        securetrace::with_span("tool.calculator", type = "tool", {
+          result <- .do_calc()
+          .span_event("tool.result", list(tool = "calculator"))
+          result
+        })
+      } else {
+        .do_calc()
+      }
     },
     args = list(expression = "character")
   )

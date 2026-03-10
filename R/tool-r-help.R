@@ -49,36 +49,48 @@ r_help_tool <- function(allowed_packages = c("base", "stats", "utils",
     name = "r_help",
     description = "Look up R function documentation from allowed packages.",
     fn = function(topic, package = "base") {
-      check_rate_limit(limiter)
+      .do_help <- function() {
+        check_rate_limit(limiter)
 
-      if (!package %in% allowed_packages) {
-        cli_abort("Package not allowed: {.val {package}}. Allowed: {.val {allowed_packages}}")
+        if (!package %in% allowed_packages) {
+          cli_abort("Package not allowed: {.val {package}}. Allowed: {.val {allowed_packages}}")
+        }
+
+        # Look up help
+        help_obj <- tryCatch(
+          utils::help(topic, package = (package)),
+          error = function(e) NULL
+        )
+
+        if (is.null(help_obj) || length(help_obj) == 0L) {
+          cli_abort("No help found for {.fn {topic}} in package {.pkg {package}}")
+        }
+
+        # NOTE: Accesses unexported utils function .getHelpFile.
+        # This may break in future R versions if the internal API changes.
+        get_help_file <- getFromNamespace(".getHelpFile", "utils")
+        help_file <- get_help_file(help_obj)
+        txt <- utils::capture.output(
+          tools::Rd2txt(help_file, out = stdout(), package = package)
+        )
+
+        # Truncate to max_lines
+        if (length(txt) > max_lines) {
+          txt <- c(txt[seq_len(max_lines)], "... [truncated]")
+        }
+
+        paste(txt, collapse = "\n")
       }
 
-      # Look up help
-      help_obj <- tryCatch(
-        utils::help(topic, package = (package)),
-        error = function(e) NULL
-      )
-
-      if (is.null(help_obj) || length(help_obj) == 0L) {
-        cli_abort("No help found for {.fn {topic}} in package {.pkg {package}}")
+      if (.trace_active()) {
+        securetrace::with_span("tool.r_help", type = "tool", {
+          result <- .do_help()
+          .span_event("tool.result", list(tool = "r_help"))
+          result
+        })
+      } else {
+        .do_help()
       }
-
-      # NOTE: Accesses unexported utils function .getHelpFile.
-      # This may break in future R versions if the internal API changes.
-      get_help_file <- getFromNamespace(".getHelpFile", "utils")
-      help_file <- get_help_file(help_obj)
-      txt <- utils::capture.output(
-        tools::Rd2txt(help_file, out = stdout(), package = package)
-      )
-
-      # Truncate to max_lines
-      if (length(txt) > max_lines) {
-        txt <- c(txt[seq_len(max_lines)], "... [truncated]")
-      }
-
-      paste(txt, collapse = "\n")
     },
     args = list(topic = "character", package = "character")
   )

@@ -64,16 +64,28 @@ read_file_tool <- function(allowed_dirs, max_file_size = "50MB", max_rows = 1000
       "Supports csv, json, txt, xlsx, parquet, rds formats."
     ),
     fn = function(path, format = "auto") {
-      check_rate_limit(limiter)
+      .do_read <- function() {
+        check_rate_limit(limiter)
 
-      resolved <- validate_path(path, allowed_dirs, must_exist = TRUE)
-      validate_file_size(resolved, max_bytes)
+        resolved <- validate_path(path, allowed_dirs, must_exist = TRUE)
+        validate_file_size(resolved, max_bytes)
 
-      if (identical(format, "auto")) {
-        format <- detect_format(resolved)
+        if (identical(format, "auto")) {
+          format <- detect_format(resolved)
+        }
+
+        read_by_format(resolved, format, max_rows)
       }
 
-      read_by_format(resolved, format, max_rows)
+      if (.trace_active()) {
+        securetrace::with_span("tool.read_file", type = "tool", {
+          result <- .do_read()
+          .span_event("tool.result", list(tool = "read_file"))
+          result
+        })
+      } else {
+        .do_read()
+      }
     },
     args = list(path = "character", format = "character")
   )

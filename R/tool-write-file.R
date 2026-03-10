@@ -69,69 +69,81 @@ write_file_tool <- function(allowed_dirs, max_file_size = "10MB",
       "Supports csv, json, txt, rds formats."
     ),
     fn = function(path, content, format = "auto") {
-      check_rate_limit(limiter)
+      .do_write <- function() {
+        check_rate_limit(limiter)
 
-      # Validate the target path (parent dir must be in allowed_dirs)
-      resolved <- validate_path(path, allowed_dirs, must_exist = FALSE)
+        # Validate the target path (parent dir must be in allowed_dirs)
+        resolved <- validate_path(path, allowed_dirs, must_exist = FALSE)
 
-      # Overwrite protection
-      if (!overwrite && file.exists(resolved)) {
-        cli_abort("File already exists and overwrite is disabled: {.path {path}}")
-      }
+        # Overwrite protection
+        if (!overwrite && file.exists(resolved)) {
+          cli_abort("File already exists and overwrite is disabled: {.path {path}}")
+        }
 
-      # Auto-detect format from extension
-      # NOTE: Duplicates logic from detect_format() in tool-read-file.R.
-      # Write supports a subset of read formats (csv, json, txt, rds).
-      if (identical(format, "auto")) {
-        ext <- tolower(tools::file_ext(path))
-        format <- switch(ext,
-          csv = "csv",
-          json = "json",
-          txt = , text = "txt",
-          rds = "rds",
-          cli_abort("Cannot auto-detect write format for extension: {.val {ext}}")
+        # Auto-detect format from extension
+        # NOTE: Duplicates logic from detect_format() in tool-read-file.R.
+        # Write supports a subset of read formats (csv, json, txt, rds).
+        if (identical(format, "auto")) {
+          ext <- tolower(tools::file_ext(path))
+          format <- switch(ext,
+            csv = "csv",
+            json = "json",
+            txt = , text = "txt",
+            rds = "rds",
+            cli_abort("Cannot auto-detect write format for extension: {.val {ext}}")
+          )
+        }
+
+        # Write to temp file first, check size, then move
+        tmp <- tempfile(tmpdir = dirname(resolved))
+        on.exit(unlink(tmp), add = TRUE)
+
+        switch(format,
+          csv = {
+            if (is.data.frame(content)) {
+              utils::write.csv(content, tmp, row.names = FALSE)
+            } else {
+              cli_abort("CSV format requires a data frame as content.")
+            }
+          },
+          json = {
+            rlang::check_installed("jsonlite", reason = "to write JSON files")
+            writeLines(jsonlite::toJSON(content, auto_unbox = TRUE, pretty = TRUE), tmp)
+          },
+          txt = {
+            if (is.character(content)) {
+              writeLines(content, tmp)
+            } else {
+              writeLines(as.character(content), tmp)
+            }
+          },
+          rds = {
+            saveRDS(content, tmp)
+          },
+          cli_abort("Unsupported write format: {.val {format}}")
         )
+
+        # Check size of written file
+        validate_file_size(tmp, max_bytes)
+
+        # Move to target
+        file.copy(tmp, resolved, overwrite = TRUE)
+
+        # Re-validate after write to catch symlink TOCTOU attacks
+        validate_written_path(resolved, allowed_dirs)
+
+        invisible(list(path = resolved, size = file.info(resolved)$size, format = format))
       }
 
-      # Write to temp file first, check size, then move
-      tmp <- tempfile(tmpdir = dirname(resolved))
-      on.exit(unlink(tmp), add = TRUE)
-
-      switch(format,
-        csv = {
-          if (is.data.frame(content)) {
-            utils::write.csv(content, tmp, row.names = FALSE)
-          } else {
-            cli_abort("CSV format requires a data frame as content.")
-          }
-        },
-        json = {
-          rlang::check_installed("jsonlite", reason = "to write JSON files")
-          writeLines(jsonlite::toJSON(content, auto_unbox = TRUE, pretty = TRUE), tmp)
-        },
-        txt = {
-          if (is.character(content)) {
-            writeLines(content, tmp)
-          } else {
-            writeLines(as.character(content), tmp)
-          }
-        },
-        rds = {
-          saveRDS(content, tmp)
-        },
-        cli_abort("Unsupported write format: {.val {format}}")
-      )
-
-      # Check size of written file
-      validate_file_size(tmp, max_bytes)
-
-      # Move to target
-      file.copy(tmp, resolved, overwrite = TRUE)
-
-      # Re-validate after write to catch symlink TOCTOU attacks
-      validate_written_path(resolved, allowed_dirs)
-
-      invisible(list(path = resolved, size = file.info(resolved)$size, format = format))
+      if (.trace_active()) {
+        securetrace::with_span("tool.write_file", type = "tool", {
+          result <- .do_write()
+          .span_event("tool.result", list(tool = "write_file"))
+          result
+        })
+      } else {
+        .do_write()
+      }
     },
     args = list(path = "character", content = "list", format = "character")
   )
