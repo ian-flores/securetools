@@ -150,7 +150,7 @@ functions, and numeric literals are present. Variable access,
 assignment, and arbitrary function calls are all rejected before
 evaluation ever occurs.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculator_tool.html">calculator_tool</a></span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://ian-flores.github.io/securer/reference/SecureSession.html" class="external-link">SecureSession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">execute</span><span class="op">(</span><span class="st">'calculator(expression = "sqrt(144) + 2^3")'</span><span class="op">)</span></span>
@@ -179,13 +179,13 @@ without granting write access to the same directory:</p>
 <code class="sourceCode R"><span><span class="co"># Only allow access to a specific directory</span></span>
 <span><span class="va">data_dir</span> <span class="op">&lt;-</span> <span class="st">"/path/to/project/data"</span></span>
 <span></span>
-<span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_file_tool.html">read_file_tool</a></span><span class="op">(</span></span>
+<span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span></span>
 <span>  allowed_dirs <span class="op">=</span> <span class="va">data_dir</span>,</span>
 <span>  max_file_size <span class="op">=</span> <span class="st">"50MB"</span>,</span>
 <span>  max_rows <span class="op">=</span> <span class="fl">10000</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">writer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/write_file_tool.html">write_file_tool</a></span><span class="op">(</span></span>
+<span><span class="va">writer</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_write_file.html">tool_write_file</a></span><span class="op">(</span></span>
 <span>  allowed_dirs <span class="op">=</span> <span class="va">data_dir</span>,</span>
 <span>  max_file_size <span class="op">=</span> <span class="st">"10MB"</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -222,7 +222,7 @@ fetched content) into running <code>DROP TABLE</code>,
 Parameterized queries help, but they still require the developer to use
 them correctly.</p>
 <p>securetools eliminates the attack surface entirely: the agent never
-writes SQL at all. The <code><a href="../reference/query_sql_tool.html">query_sql_tool()</a></code> exposes a
+writes SQL at all. The <code><a href="../reference/tool_query_sql.html">tool_query_sql()</a></code> exposes a
 structured interface where the agent specifies a table name, column
 list, and optional filter. The tool constructs the SQL internally using
 parameterized queries. Injection is structurally impossible because the
@@ -240,7 +240,7 @@ injection patterns before being interpolated into the query.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dbi.r-dbi.org" class="external-link">DBI</a></span><span class="op">)</span></span>
 <span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">dbConnect</a></span><span class="op">(</span><span class="fu">RSQLite</span><span class="fu">::</span><span class="fu"><a href="https://rsqlite.r-dbi.org/reference/SQLite.html" class="external-link">SQLite</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"app.db"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">sql_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/query_sql_tool.html">query_sql_tool</a></span><span class="op">(</span></span>
+<span><span class="va">sql_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_query_sql.html">tool_query_sql</a></span><span class="op">(</span></span>
 <span></span>
 <span>  conn <span class="op">=</span> <span class="va">con</span>,</span>
 <span>  allowed_tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"users"</span>, <span class="st">"orders"</span><span class="op">)</span>,</span>
@@ -277,7 +277,7 @@ request loops.</p>
 (HTTP/HTTPS only), private IP blocking, response size limits, and rate
 limiting:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fetch_url_tool.html">fetch_url_tool</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_fetch_url.html">tool_fetch_url</a></span><span class="op">(</span></span>
 <span>  allowed_domains <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"api.github.com"</span>, <span class="st">"*.githubusercontent.com"</span><span class="op">)</span>,</span>
 <span>  max_response_size <span class="op">=</span> <span class="st">"1MB"</span>,</span>
 <span>  timeout_secs <span class="op">=</span> <span class="fl">30</span>,</span>
@@ -297,12 +297,12 @@ limiting:</p>
 <h3 id="data-profiling">Data profiling<a class="anchor" aria-label="anchor" href="#data-profiling"></a>
 </h3>
 <p>The threat: profiling enormous datasets without limits can exhaust
-memory and crash the host process. The <code><a href="../reference/data_profile_tool.html">data_profile_tool()</a></code>
+memory and crash the host process. The <code><a href="../reference/tool_data_profile.html">tool_data_profile()</a></code>
 enforces row limits through sampling, so multi-million-row data frames
 are summarized safely without consuming all available memory.</p>
 <p>Compute summary statistics for data frames:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">profiler</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/data_profile_tool.html">data_profile_tool</a></span><span class="op">(</span>max_rows <span class="op">=</span> <span class="fl">100000</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">profiler</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_data_profile.html">tool_data_profile</a></span><span class="op">(</span>max_rows <span class="op">=</span> <span class="fl">100000</span><span class="op">)</span></span>
 <span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://ian-flores.github.io/securer/reference/SecureSession.html" class="external-link">SecureSession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">profiler</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">execute</span><span class="op">(</span><span class="st">'</span></span>
@@ -325,7 +325,7 @@ where only safe base R and graphics functions are available. Output is
 also path-scoped and size-limited to prevent writing oversized files to
 arbitrary locations:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">plotter</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_tool.html">plot_tool</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">plotter</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_plot.html">tool_plot</a></span><span class="op">(</span></span>
 <span>  allowed_dirs <span class="op">=</span> <span class="st">"/path/to/output"</span>,</span>
 <span>  max_file_size <span class="op">=</span> <span class="st">"5MB"</span></span>
 <span><span class="op">)</span></span>
@@ -351,10 +351,10 @@ but it can leak information about installed packages and system
 configuration. The <code>allowed_packages</code> parameter restricts
 which packages can be queried, keeping the agent’s awareness scoped to
 what you intend.</p>
-<p>The <code><a href="../reference/r_help_tool.html">r_help_tool()</a></code> gives safe access to R
+<p>The <code><a href="../reference/tool_r_help.html">tool_r_help()</a></code> gives safe access to R
 documentation:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">help_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/r_help_tool.html">r_help_tool</a></span><span class="op">(</span>allowed_packages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"base"</span>, <span class="st">"stats"</span>, <span class="st">"utils"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">help_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_r_help.html">tool_r_help</a></span><span class="op">(</span>allowed_packages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"base"</span>, <span class="st">"stats"</span>, <span class="st">"utils"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://ian-flores.github.io/securer/reference/SecureSession.html" class="external-link">SecureSession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">help_tool</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -442,16 +442,16 @@ rate limiting, a confused or manipulated agent could make thousands of
 API calls, exhaust disk I/O, or run up cloud costs. Rate limits impose a
 hard boundary independent of the LLM’s decision-making.</p>
 <p>All tool factories accept <code>max_calls</code> for lifetime rate
-limiting. Some tools (like <code><a href="../reference/fetch_url_tool.html">fetch_url_tool()</a></code>) also support
+limiting. Some tools (like <code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code>) also support
 <code>max_calls_per_minute</code> for sliding-window throttling. When a
 limit is hit, the tool returns an error message to the LLM rather than
 silently failing, giving the agent a chance to adjust its strategy:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Allow only 100 calculator evaluations per session</span></span>
-<span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculator_tool.html">calculator_tool</a></span><span class="op">(</span>max_calls <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span>max_calls <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># URL fetch with both lifetime and per-minute limits</span></span>
-<span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fetch_url_tool.html">fetch_url_tool</a></span><span class="op">(</span></span>
+<span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_fetch_url.html">tool_fetch_url</a></span><span class="op">(</span></span>
 <span>  max_calls <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  max_calls_per_minute <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -473,42 +473,42 @@ silently failing, giving the agent a chance to adjust its strategy:</p>
 <tbody>
 <tr class="odd">
 <td>Calculator</td>
-<td><code><a href="../reference/calculator_tool.html">calculator_tool()</a></code></td>
+<td><code><a href="../reference/tool_calculator.html">tool_calculator()</a></code></td>
 <td>AST validation, no code injection</td>
 </tr>
 <tr class="even">
 <td>Data Profile</td>
-<td><code><a href="../reference/data_profile_tool.html">data_profile_tool()</a></code></td>
+<td><code><a href="../reference/tool_data_profile.html">tool_data_profile()</a></code></td>
 <td>Row sampling for large data</td>
 </tr>
 <tr class="odd">
 <td>Read File</td>
-<td><code><a href="../reference/read_file_tool.html">read_file_tool()</a></code></td>
+<td><code><a href="../reference/tool_read_file.html">tool_read_file()</a></code></td>
 <td>Path scoping, size limits</td>
 </tr>
 <tr class="even">
 <td>Write File</td>
-<td><code><a href="../reference/write_file_tool.html">write_file_tool()</a></code></td>
+<td><code><a href="../reference/tool_write_file.html">tool_write_file()</a></code></td>
 <td>Path scoping, size limits, overwrite protection</td>
 </tr>
 <tr class="odd">
 <td>SQL Query</td>
-<td><code><a href="../reference/query_sql_tool.html">query_sql_tool()</a></code></td>
+<td><code><a href="../reference/tool_query_sql.html">tool_query_sql()</a></code></td>
 <td>Table allow-list, parameterized queries</td>
 </tr>
 <tr class="even">
 <td>URL Fetch</td>
-<td><code><a href="../reference/fetch_url_tool.html">fetch_url_tool()</a></code></td>
+<td><code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code></td>
 <td>Domain allow-list, rate limiting</td>
 </tr>
 <tr class="odd">
 <td>Plot</td>
-<td><code><a href="../reference/plot_tool.html">plot_tool()</a></code></td>
+<td><code><a href="../reference/tool_plot.html">tool_plot()</a></code></td>
 <td>Path scoping, output size limits</td>
 </tr>
 <tr class="even">
 <td>R Help</td>
-<td><code><a href="../reference/r_help_tool.html">r_help_tool()</a></code></td>
+<td><code><a href="../reference/tool_r_help.html">tool_r_help()</a></code></td>
 <td>Package allow-list</td>
 </tr>
 </tbody>

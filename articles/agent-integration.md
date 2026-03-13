@@ -87,8 +87,8 @@ sandbox.
 
 ``` r
 # Create security-scoped tools
-calc <- calculator_tool()
-reader <- read_file_tool(allowed_dirs = "/path/to/project/data")
+calc <- tool_calculator()
+reader <- tool_read_file(allowed_dirs = "/path/to/project/data")
 
 # Build an agent with tools and secure execution
 analyst <- agent(
@@ -162,8 +162,8 @@ data_agent <- agent(
     )
   ),
   tools = list(
-    calculator_tool(),
-    data_profile_tool(max_rows = 50000)
+    tool_calculator(),
+    tool_data_profile(max_rows = 50000)
   ),
   secure = TRUE
 )
@@ -179,8 +179,8 @@ file_agent <- agent(
     )
   ),
   tools = list(
-    read_file_tool(allowed_dirs = "/path/to/project/data"),
-    write_file_tool(allowed_dirs = "/path/to/project/output")
+    tool_read_file(allowed_dirs = "/path/to/project/data"),
+    tool_write_file(allowed_dirs = "/path/to/project/output")
   ),
   secure = TRUE
 )
@@ -211,7 +211,7 @@ result <- graph$invoke(list(messages = list(
 ```
 
 The supervisor needs no tools of its own; it uses the `route` tool that
-[`supervisor_graph()`](https://ian-flores.github.io/orchestr/reference/supervisor_graph.html)
+[`supervisor_graph()`](https://ian-flores.github.io/orchestr/reference/graph_supervisor.html)
 injects automatically. Workers each get their own `SecureSession`,
 isolating allowed directories and rate limits per worker.
 
@@ -241,10 +241,10 @@ fetching more data.
 
 ``` r
 # Cap the calculator at 50 calls per agent session
-calc <- calculator_tool(max_calls = 50)
+calc <- tool_calculator(max_calls = 50)
 
 # URL fetch with both lifetime and per-minute limits
-fetcher <- fetch_url_tool(
+fetcher <- tool_fetch_url(
   allowed_domains = c("api.github.com"),
   max_calls = 100,
   max_calls_per_minute = 10
@@ -291,8 +291,8 @@ assistant <- agent(
     system_prompt = "You help with data tasks and can check the current time."
   ),
   tools = list(
-    calculator_tool(),
-    read_file_tool(allowed_dirs = "/path/to/data"),
+    tool_calculator(),
+    tool_read_file(allowed_dirs = "/path/to/data"),
     timestamp_tool
   ),
   secure = TRUE

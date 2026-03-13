@@ -140,8 +140,8 @@ securetools:</p>
 sandbox.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create security-scoped tools</span></span>
-<span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculator_tool.html">calculator_tool</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_file_tool.html">read_file_tool</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span></span>
+<span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Build an agent with tools and secure execution</span></span>
 <span><span class="va">analyst</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
@@ -154,7 +154,7 @@ sandbox.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Wrap in a ReAct graph for state management</span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/react_graph.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">analyst</span><span class="op">)</span></span>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_react.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">analyst</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Read the file sales.csv from the data directory and calculate the total revenue."</span></span>
@@ -211,8 +211,8 @@ carrying its own set of tools.</p>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/calculator_tool.html">calculator_tool</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="../reference/data_profile_tool.html">data_profile_tool</a></span><span class="op">(</span>max_rows <span class="op">=</span> <span class="fl">50000</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/tool_data_profile.html">tool_data_profile</a></span><span class="op">(</span>max_rows <span class="op">=</span> <span class="fl">50000</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
@@ -228,8 +228,8 @@ carrying its own set of tools.</p>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/read_file_tool.html">read_file_tool</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="../reference/write_file_tool.html">write_file_tool</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/output"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/tool_write_file.html">tool_write_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/output"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
@@ -246,7 +246,7 @@ carrying its own set of tools.</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/supervisor_graph.html" class="external-link">supervisor_graph</a></span><span class="op">(</span></span>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_supervisor.html" class="external-link">supervisor_graph</a></span><span class="op">(</span></span>
 <span>  supervisor <span class="op">=</span> <span class="va">supervisor</span>,</span>
 <span>  workers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    data_specialist <span class="op">=</span> <span class="va">data_agent</span>,</span>
@@ -258,7 +258,7 @@ carrying its own set of tools.</p>
 <span>  <span class="st">"Read sales.csv, then calculate the mean of the revenue column."</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>The supervisor needs no tools of its own; it uses the
-<code>route</code> tool that <code><a href="https://ian-flores.github.io/orchestr/reference/supervisor_graph.html" class="external-link">supervisor_graph()</a></code> injects
+<code>route</code> tool that <code><a href="https://ian-flores.github.io/orchestr/reference/graph_supervisor.html" class="external-link">supervisor_graph()</a></code> injects
 automatically. Workers each get their own <code>SecureSession</code>,
 isolating allowed directories and rate limits per worker.</p>
 </div>
@@ -288,10 +288,10 @@ adjust its strategy. It might summarize what it has so far instead of
 fetching more data.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Cap the calculator at 50 calls per agent session</span></span>
-<span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calculator_tool.html">calculator_tool</a></span><span class="op">(</span>max_calls <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
+<span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span>max_calls <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># URL fetch with both lifetime and per-minute limits</span></span>
-<span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fetch_url_tool.html">fetch_url_tool</a></span><span class="op">(</span></span>
+<span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_fetch_url.html">tool_fetch_url</a></span><span class="op">(</span></span>
 <span>  allowed_domains <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"api.github.com"</span><span class="op">)</span>,</span>
 <span>  max_calls <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  max_calls_per_minute <span class="op">=</span> <span class="fl">10</span></span>
@@ -306,7 +306,7 @@ fetching more data.</p>
 <span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/react_graph.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">researcher</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_react.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">researcher</span><span class="op">)</span></span></code></pre></div>
 <p>When a limit is hit, the tool returns an error message to the LLM,
 which can then stop or adjust its approach.</p>
 </div>
@@ -336,14 +336,14 @@ isolation.</p>
 <span>    system_prompt <span class="op">=</span> <span class="st">"You help with data tasks and can check the current time."</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/calculator_tool.html">calculator_tool</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="../reference/read_file_tool.html">read_file_tool</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/data"</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/data"</span><span class="op">)</span>,</span>
 <span>    <span class="va">timestamp_tool</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/react_graph.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">assistant</span><span class="op">)</span></span>
+<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_react.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">assistant</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"What time is it? Also, what is 2^10?"</span></span>

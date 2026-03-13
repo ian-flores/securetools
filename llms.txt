@@ -71,9 +71,9 @@ library(securetools)
 library(securer)
 
 # Create tools with security constraints
-calc <- calculator_tool()
-reader <- read_file_tool(allowed_dirs = "/data", max_file_size = "50MB")
-sql <- query_sql_tool(conn = con, allowed_tables = c("users", "orders"))
+calc <- tool_calculator()
+reader <- tool_read_file(allowed_dirs = "/data", max_file_size = "50MB")
+sql <- tool_query_sql(conn = con, allowed_tables = c("users", "orders"))
 
 # Use with SecureSession
 session <- SecureSession$new(tools = list(calc, reader, sql))
@@ -86,18 +86,18 @@ session$close()
 
 | Tool         | Factory                                                                                          | Security Features                       |
 |--------------|--------------------------------------------------------------------------------------------------|-----------------------------------------|
-| Calculator   | [`calculator_tool()`](https://ian-flores.github.io/securetools/reference/calculator_tool.md)     | AST validation, no code injection       |
-| Data Profile | [`data_profile_tool()`](https://ian-flores.github.io/securetools/reference/data_profile_tool.md) | Row sampling for large data             |
-| Read File    | [`read_file_tool()`](https://ian-flores.github.io/securetools/reference/read_file_tool.md)       | Path scoping, size limits               |
-| Write File   | [`write_file_tool()`](https://ian-flores.github.io/securetools/reference/write_file_tool.md)     | Path scoping, overwrite protection      |
-| SQL Query    | [`query_sql_tool()`](https://ian-flores.github.io/securetools/reference/query_sql_tool.md)       | Table allow-list, parameterized queries |
-| URL Fetch    | [`fetch_url_tool()`](https://ian-flores.github.io/securetools/reference/fetch_url_tool.md)       | Domain allow-list, rate limiting        |
-| Plot         | [`plot_tool()`](https://ian-flores.github.io/securetools/reference/plot_tool.md)                 | Path scoping, output size limits        |
-| R Help       | [`r_help_tool()`](https://ian-flores.github.io/securetools/reference/r_help_tool.md)             | Package allow-list                      |
+| Calculator   | [`tool_calculator()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md)     | AST validation, no code injection       |
+| Data Profile | [`tool_data_profile()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md) | Row sampling for large data             |
+| Read File    | [`tool_read_file()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md)       | Path scoping, size limits               |
+| Write File   | [`tool_write_file()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md)     | Path scoping, overwrite protection      |
+| SQL Query    | [`tool_query_sql()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md)       | Table allow-list, parameterized queries |
+| URL Fetch    | [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)       | Domain allow-list, rate limiting        |
+| Plot         | [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)                 | Path scoping, output size limits        |
+| R Help       | [`tool_r_help()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md)             | Package allow-list                      |
 
 ## Design Principles
 
-- **Factory functions**: `read_file_tool(allowed_dirs = "/data")` forces
+- **Factory functions**: `tool_read_file(allowed_dirs = "/data")` forces
   explicit security configuration
 - **Parent-side enforcement**: Tool constraints run in the host process,
   not the sandbox. Even sandbox bypass leaves tool protections intact
@@ -134,41 +134,49 @@ MIT
 
 Tools for reading and writing files with path scoping and size limits.
 
-- [`read_file_tool()`](https://ian-flores.github.io/securetools/reference/read_file_tool.md)
+- [`tool_read_file()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md)
+  [`read_file_tool()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md)
   : Create a file reading tool
-- [`write_file_tool()`](https://ian-flores.github.io/securetools/reference/write_file_tool.md)
+- [`tool_write_file()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md)
+  [`write_file_tool()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md)
   : Create a file writing tool
 
 ## Database
 
 Structured database queries with parameterized filters.
 
-- [`query_sql_tool()`](https://ian-flores.github.io/securetools/reference/query_sql_tool.md)
+- [`tool_query_sql()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md)
+  [`query_sql_tool()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md)
   : Create a SQL query tool
 
 ## Data Analysis
 
 Tools for data profiling, calculation, and visualization.
 
-- [`data_profile_tool()`](https://ian-flores.github.io/securetools/reference/data_profile_tool.md)
+- [`tool_data_profile()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md)
+  [`data_profile_tool()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md)
   : Create a data profiling tool
-- [`calculator_tool()`](https://ian-flores.github.io/securetools/reference/calculator_tool.md)
+- [`tool_calculator()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md)
+  [`calculator_tool()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md)
   : Create a calculator tool
-- [`plot_tool()`](https://ian-flores.github.io/securetools/reference/plot_tool.md)
+- [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)
+  [`plot_tool()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)
   : Create a plot rendering tool
 
 ## Web
 
 HTTP fetch with domain allow-lists and rate limiting.
 
-- [`fetch_url_tool()`](https://ian-flores.github.io/securetools/reference/fetch_url_tool.md)
+- [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)
+  [`fetch_url_tool()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)
   : Create a URL fetch tool
 
 ## Documentation
 
 R help documentation lookup.
 
-- [`r_help_tool()`](https://ian-flores.github.io/securetools/reference/r_help_tool.md)
+- [`tool_r_help()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md)
+  [`r_help_tool()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md)
   : Create an R help documentation tool
 
 # Articles

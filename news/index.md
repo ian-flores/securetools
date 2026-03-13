@@ -5,21 +5,21 @@
 ### New Features
 
 - 8 security-hardened tool factories for use with securer:
-  - [`read_file_tool()`](https://ian-flores.github.io/securetools/reference/read_file_tool.md)
+  - [`read_file_tool()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md)
     – Sandboxed file reading with path validation
-  - [`write_file_tool()`](https://ian-flores.github.io/securetools/reference/write_file_tool.md)
+  - [`write_file_tool()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md)
     – Sandboxed file writing with size limits
-  - [`calculator_tool()`](https://ian-flores.github.io/securetools/reference/calculator_tool.md)
+  - [`calculator_tool()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md)
     – Safe expression evaluation with AST validation
-  - [`query_sql_tool()`](https://ian-flores.github.io/securetools/reference/query_sql_tool.md)
+  - [`query_sql_tool()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md)
     – Structured SQL queries with parameterized filters
-  - [`fetch_url_tool()`](https://ian-flores.github.io/securetools/reference/fetch_url_tool.md)
+  - [`fetch_url_tool()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)
     – HTTP fetching with domain allowlists and SSRF protection
-  - [`plot_tool()`](https://ian-flores.github.io/securetools/reference/plot_tool.md)
+  - [`plot_tool()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)
     – Plot generation with restricted code evaluation
-  - [`data_profile_tool()`](https://ian-flores.github.io/securetools/reference/data_profile_tool.md)
+  - [`data_profile_tool()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md)
     – Dataset profiling and summary statistics
-  - [`r_help_tool()`](https://ian-flores.github.io/securetools/reference/r_help_tool.md)
+  - [`r_help_tool()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md)
     – R documentation lookup with package restrictions
 - Internal validation utilities for path safety, SQL identifiers, and
   rate limiting

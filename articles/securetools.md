@@ -92,7 +92,7 @@ assignment, and arbitrary function calls are all rejected before
 evaluation ever occurs.
 
 ``` r
-calc <- calculator_tool()
+calc <- tool_calculator()
 session <- SecureSession$new(tools = list(calc))
 
 session$execute('calculator(expression = "sqrt(144) + 2^3")')
@@ -122,13 +122,13 @@ without granting write access to the same directory:
 # Only allow access to a specific directory
 data_dir <- "/path/to/project/data"
 
-reader <- read_file_tool(
+reader <- tool_read_file(
   allowed_dirs = data_dir,
   max_file_size = "50MB",
   max_rows = 10000
 )
 
-writer <- write_file_tool(
+writer <- tool_write_file(
   allowed_dirs = data_dir,
   max_file_size = "10MB",
   overwrite = FALSE
@@ -166,7 +166,7 @@ correctly.
 
 securetools eliminates the attack surface entirely: the agent never
 writes SQL at all. The
-[`query_sql_tool()`](https://ian-flores.github.io/securetools/reference/query_sql_tool.md)
+[`tool_query_sql()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md)
 exposes a structured interface where the agent specifies a table name,
 column list, and optional filter. The tool constructs the SQL internally
 using parameterized queries. Injection is structurally impossible
@@ -187,7 +187,7 @@ injection patterns before being interpolated into the query.
 library(DBI)
 con <- dbConnect(RSQLite::SQLite(), "app.db")
 
-sql_tool <- query_sql_tool(
+sql_tool <- tool_query_sql(
 
   conn = con,
   allowed_tables = c("users", "orders"),
@@ -225,7 +225,7 @@ The URL fetch tool constrains network access with domain allow-lists
 limiting:
 
 ``` r
-fetcher <- fetch_url_tool(
+fetcher <- tool_fetch_url(
   allowed_domains = c("api.github.com", "*.githubusercontent.com"),
   max_response_size = "1MB",
   timeout_secs = 30,
@@ -246,14 +246,14 @@ session$close()
 
 The threat: profiling enormous datasets without limits can exhaust
 memory and crash the host process. The
-[`data_profile_tool()`](https://ian-flores.github.io/securetools/reference/data_profile_tool.md)
+[`tool_data_profile()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md)
 enforces row limits through sampling, so multi-million-row data frames
 are summarized safely without consuming all available memory.
 
 Compute summary statistics for data frames:
 
 ``` r
-profiler <- data_profile_tool(max_rows = 100000)
+profiler <- tool_data_profile(max_rows = 100000)
 session <- SecureSession$new(tools = list(profiler))
 
 session$execute('
@@ -277,7 +277,7 @@ also path-scoped and size-limited to prevent writing oversized files to
 arbitrary locations:
 
 ``` r
-plotter <- plot_tool(
+plotter <- tool_plot(
   allowed_dirs = "/path/to/output",
   max_file_size = "5MB"
 )
@@ -304,11 +304,11 @@ configuration. The `allowed_packages` parameter restricts which packages
 can be queried, keeping the agent’s awareness scoped to what you intend.
 
 The
-[`r_help_tool()`](https://ian-flores.github.io/securetools/reference/r_help_tool.md)
+[`tool_r_help()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md)
 gives safe access to R documentation:
 
 ``` r
-help_tool <- r_help_tool(allowed_packages = c("base", "stats", "utils"))
+help_tool <- tool_r_help(allowed_packages = c("base", "stats", "utils"))
 
 session <- SecureSession$new(tools = list(help_tool))
 
@@ -383,17 +383,17 @@ hard boundary independent of the LLM’s decision-making.
 
 All tool factories accept `max_calls` for lifetime rate limiting. Some
 tools (like
-[`fetch_url_tool()`](https://ian-flores.github.io/securetools/reference/fetch_url_tool.md))
+[`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md))
 also support `max_calls_per_minute` for sliding-window throttling. When
 a limit is hit, the tool returns an error message to the LLM rather than
 silently failing, giving the agent a chance to adjust its strategy:
 
 ``` r
 # Allow only 100 calculator evaluations per session
-calc <- calculator_tool(max_calls = 100)
+calc <- tool_calculator(max_calls = 100)
 
 # URL fetch with both lifetime and per-minute limits
-fetcher <- fetch_url_tool(
+fetcher <- tool_fetch_url(
   max_calls = 1000,
   max_calls_per_minute = 10
 )
@@ -403,11 +403,11 @@ fetcher <- fetch_url_tool(
 
 | Tool         | Factory                                                                                          | Key Security Features                           |
 |--------------|--------------------------------------------------------------------------------------------------|-------------------------------------------------|
-| Calculator   | [`calculator_tool()`](https://ian-flores.github.io/securetools/reference/calculator_tool.md)     | AST validation, no code injection               |
-| Data Profile | [`data_profile_tool()`](https://ian-flores.github.io/securetools/reference/data_profile_tool.md) | Row sampling for large data                     |
-| Read File    | [`read_file_tool()`](https://ian-flores.github.io/securetools/reference/read_file_tool.md)       | Path scoping, size limits                       |
-| Write File   | [`write_file_tool()`](https://ian-flores.github.io/securetools/reference/write_file_tool.md)     | Path scoping, size limits, overwrite protection |
-| SQL Query    | [`query_sql_tool()`](https://ian-flores.github.io/securetools/reference/query_sql_tool.md)       | Table allow-list, parameterized queries         |
-| URL Fetch    | [`fetch_url_tool()`](https://ian-flores.github.io/securetools/reference/fetch_url_tool.md)       | Domain allow-list, rate limiting                |
-| Plot         | [`plot_tool()`](https://ian-flores.github.io/securetools/reference/plot_tool.md)                 | Path scoping, output size limits                |
-| R Help       | [`r_help_tool()`](https://ian-flores.github.io/securetools/reference/r_help_tool.md)             | Package allow-list                              |
+| Calculator   | [`tool_calculator()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md)     | AST validation, no code injection               |
+| Data Profile | [`tool_data_profile()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md) | Row sampling for large data                     |
+| Read File    | [`tool_read_file()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md)       | Path scoping, size limits                       |
+| Write File   | [`tool_write_file()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md)     | Path scoping, size limits, overwrite protection |
+| SQL Query    | [`tool_query_sql()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md)       | Table allow-list, parameterized queries         |
+| URL Fetch    | [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)       | Domain allow-list, rate limiting                |
+| Plot         | [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)                 | Path scoping, output size limits                |
+| R Help       | [`tool_r_help()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md)             | Package allow-list                              |
