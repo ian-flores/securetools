@@ -1,15 +1,15 @@
-# --- Tests for fetch_url_tool ---
+# --- Tests for tool_fetch_url ---
 
-test_that("fetch_url_tool returns securer_tool object", {
+test_that("tool_fetch_url returns securer_tool object", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = "example.com")
+  tool <- tool_fetch_url(allowed_domains = "example.com")
   expect_s3_class(tool, "securer::securer_tool")
   expect_equal(tool@name, "fetch_url")
 })
 
 test_that("fetch_url rejects disallowed domains", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = c("example.com"))
+  tool <- tool_fetch_url(allowed_domains = c("example.com"))
   expect_error(
     tool@fn(url = "https://evil.com/data", method = "GET"),
     "Domain not allowed"
@@ -27,7 +27,7 @@ test_that("fetch_url allows exact domain match", {
 
 test_that("fetch_url wildcard domain matching", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = c("*.github.com"))
+  tool <- tool_fetch_url(allowed_domains = c("*.github.com"))
 
   # Subdomain should pass domain validation (tested via internal helper to avoid
   # network dependency)
@@ -42,7 +42,7 @@ test_that("fetch_url wildcard domain matching", {
 
 test_that("fetch_url rejects non-GET/HEAD methods", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = "example.com")
+  tool <- tool_fetch_url(allowed_domains = "example.com")
   expect_error(
     tool@fn(url = "https://example.com", method = "POST"),
     "Only GET and HEAD"
@@ -55,7 +55,7 @@ test_that("fetch_url rejects non-GET/HEAD methods", {
 
 test_that("fetch_url rate limiting works", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(
+  tool <- tool_fetch_url(
     allowed_domains = c("nonexistent.invalid"),
     max_calls = 2,
     max_calls_per_minute = 100
@@ -94,7 +94,7 @@ test_that("domain_matches with multiple patterns", {
 
 test_that("fetch_url rejects unparseable URLs", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = "example.com")
+  tool <- tool_fetch_url(allowed_domains = "example.com")
   expect_error(
     tool@fn(url = "not-a-url", method = "GET"),
     "Could not parse domain"
@@ -103,7 +103,7 @@ test_that("fetch_url rejects unparseable URLs", {
 
 test_that("fetch_url rejects file:// protocol", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = "example.com")
+  tool <- tool_fetch_url(allowed_domains = "example.com")
   # file:// URLs have no hostname, so they fail domain parsing before protocol check
   expect_error(
     tool@fn(url = "file:///etc/passwd", method = "GET"),
@@ -113,7 +113,7 @@ test_that("fetch_url rejects file:// protocol", {
 
 test_that("fetch_url rejects ftp:// protocol", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = "example.com")
+  tool <- tool_fetch_url(allowed_domains = "example.com")
   expect_error(
     tool@fn(url = "ftp://example.com/file", method = "GET"),
     "[Pp]rotocol|HTTP"
@@ -161,7 +161,7 @@ test_that(".is_private_ip returns TRUE for malformed (non-4-octet) IPs", {
 test_that("fetch_url blocks requests to IPv6 loopback via tool", {
   skip_if_not_installed("httr2")
   # [::1] is the standard way to use IPv6 in URLs
-  tool <- fetch_url_tool(allowed_domains = "example.com")
+  tool <- tool_fetch_url(allowed_domains = "example.com")
   # URL with IPv6 literal -- httr2 parses hostname as "::1"
   expect_error(
     tool@fn(url = "http://[::1]/secret"),
@@ -171,7 +171,7 @@ test_that("fetch_url blocks requests to IPv6 loopback via tool", {
 
 test_that("fetch_url blocks IPv4-mapped IPv6 addresses via tool", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = "example.com")
+  tool <- tool_fetch_url(allowed_domains = "example.com")
   expect_error(
     tool@fn(url = "http://[::ffff:127.0.0.1]/secret"),
     "[Pp]rivate|[Dd]omain|not allowed|parse"
@@ -180,7 +180,7 @@ test_that("fetch_url blocks IPv4-mapped IPv6 addresses via tool", {
 
 test_that("fetch_url blocks link-local IPv6 addresses via tool", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = "example.com")
+  tool <- tool_fetch_url(allowed_domains = "example.com")
   expect_error(
     tool@fn(url = "http://[fe80::1]/secret"),
     "[Pp]rivate|[Dd]omain|not allowed|parse"
@@ -191,7 +191,7 @@ test_that("fetch_url blocks link-local IPv6 addresses via tool", {
 
 test_that("fetch_url aborts when DNS resolution fails", {
   skip_if_not_installed("httr2")
-  tool <- fetch_url_tool(allowed_domains = "this-will-never-resolve.invalid")
+  tool <- tool_fetch_url(allowed_domains = "this-will-never-resolve.invalid")
   expect_error(
     tool@fn(url = "https://this-will-never-resolve.invalid/data", method = "GET"),
     "DNS resolution failed"
@@ -203,7 +203,7 @@ test_that("fetch_url detects private IP on resolved address", {
   # nsl() doesn't resolve "localhost" on Windows; skip there
   skip_on_os("windows")
   # localhost resolves to 127.0.0.1 -- the resolved IP must be caught
-  tool <- fetch_url_tool(allowed_domains = "localhost")
+  tool <- tool_fetch_url(allowed_domains = "localhost")
   expect_error(
     tool@fn(url = "http://localhost/secret", method = "GET"),
     "[Pp]rivate|internal"

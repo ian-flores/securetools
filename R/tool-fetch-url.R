@@ -41,14 +41,14 @@
 #'
 #' @examples
 #' \donttest{
-#' tool <- fetch_url_tool(
+#' tool <- tool_fetch_url(
 #'   allowed_domains = c("api.example.com", "*.cdn.example.com"),
 #'   max_response_size = "512KB",
 #'   timeout_secs = 10
 #' )
 #' }
 #' @export
-fetch_url_tool <- function(allowed_domains, max_response_size = "1MB",
+tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
                            timeout_secs = 30, max_calls = NULL,
                            max_calls_per_minute = 10) {
   # Factory argument validation
@@ -62,7 +62,7 @@ fetch_url_tool <- function(allowed_domains, max_response_size = "1MB",
     cli_abort("{.arg timeout_secs} must be a positive number.")
   }
 
-  rlang::check_installed("httr2", reason = "to use fetch_url_tool()")
+  rlang::check_installed("httr2", reason = "to use tool_fetch_url()")
   max_bytes <- parse_size(max_response_size)
   lifetime_limiter <- new_rate_limiter(max_calls)
   minute_limiter <- new_rate_limiter(max_calls_per_minute, window_secs = 60)
@@ -164,6 +164,14 @@ fetch_url_tool <- function(allowed_domains, max_response_size = "1MB",
     },
     args = list(url = "character", method = "character")
   )
+}
+
+#' @rdname tool_fetch_url
+#' @param ... Arguments passed to [tool_fetch_url()].
+#' @export
+fetch_url_tool <- function(...) {
+  lifecycle::deprecate_warn("0.3.0", "fetch_url_tool()", "tool_fetch_url()")
+  tool_fetch_url(...)
 }
 
 #' Check if a string looks like an IP literal (not a hostname)

@@ -1,5 +1,5 @@
 test_that("data_profile profiles iris dataset", {
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   result <- tool@fn(data = iris)
   expect_equal(result$nrow, 150)
   expect_equal(result$ncol, 5)
@@ -17,7 +17,7 @@ test_that("data_profile profiles iris dataset", {
 
 test_that("data_profile handles NA values", {
   df <- data.frame(x = c(1, 2, NA, 4), y = c("a", NA, "b", "b"))
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   result <- tool@fn(data = df)
 
   x_col <- result$columns[[1]]
@@ -32,7 +32,7 @@ test_that("data_profile handles character columns", {
     x = c("a", "b", "b", "c", "c", "c"),
     stringsAsFactors = FALSE
   )
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   result <- tool@fn(data = df)
 
   col <- result$columns[[1]]
@@ -42,7 +42,7 @@ test_that("data_profile handles character columns", {
 
 test_that("data_profile samples large data frames", {
   df <- data.frame(x = seq_len(200))
-  tool <- data_profile_tool(max_rows = 50)
+  tool <- tool_data_profile(max_rows = 50)
   result <- tool@fn(data = df)
 
   expect_equal(result$nrow, 200) # original nrow
@@ -52,7 +52,7 @@ test_that("data_profile samples large data frames", {
 
 test_that("data_profile handles empty data frame", {
   df <- data.frame(x = numeric(0), y = character(0))
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   result <- tool@fn(data = df)
 
   expect_equal(result$nrow, 0)
@@ -61,7 +61,7 @@ test_that("data_profile handles empty data frame", {
 
 test_that("data_profile handles single column", {
   df <- data.frame(x = 1:5)
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   result <- tool@fn(data = df)
 
   expect_equal(result$ncol, 1)
@@ -69,19 +69,19 @@ test_that("data_profile handles single column", {
 })
 
 test_that("data_profile rate limiting works", {
-  tool <- data_profile_tool(max_calls = 1)
+  tool <- tool_data_profile(max_calls = 1)
   tool@fn(data = iris)
   expect_error(tool@fn(data = iris), "Rate limit")
 })
 
-test_that("data_profile_tool returns securer_tool object", {
-  tool <- data_profile_tool()
+test_that("tool_data_profile returns securer_tool object", {
+  tool <- tool_data_profile()
   expect_s3_class(tool, "securer::securer_tool")
   expect_equal(tool@name, "data_profile")
 })
 
 test_that("data_profile coerces lists to data frames", {
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   # Named list (like JSON-deserialized data frame) should work
   result <- tool@fn(data = list(x = c(1, 2, 3), y = c("a", "b", "c")))
   expect_equal(result$nrow, 3)
@@ -89,18 +89,18 @@ test_that("data_profile coerces lists to data frames", {
 })
 
 test_that("data_profile rejects non-list input", {
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   expect_error(tool@fn(data = "not a data frame"), "data frame")
 })
 
 test_that("data_profile handles logical columns", {
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   result <- tool@fn(data = data.frame(x = c(TRUE, FALSE, NA)))
   expect_equal(result$columns[[1]]$n_missing, 1)
 })
 
 test_that("data_profile handles all-NA column", {
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   result <- tool@fn(data = data.frame(x = c(NA_real_, NA_real_, NA_real_)))
   expect_equal(result$columns[[1]]$n_missing, 3)
 })

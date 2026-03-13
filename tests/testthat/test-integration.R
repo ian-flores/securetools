@@ -1,9 +1,9 @@
 # --- End-to-end integration tests with SecureSession ---
 
-test_that("calculator_tool works end-to-end via SecureSession", {
+test_that("tool_calculator works end-to-end via SecureSession", {
   skip_if_no_session()
 
-  tool <- calculator_tool()
+  tool <- tool_calculator()
   session <- securer::SecureSession$new(tools = list(tool))
   on.exit(session$close())
 
@@ -14,7 +14,7 @@ test_that("calculator_tool works end-to-end via SecureSession", {
 test_that("calculator rejects unsafe code via SecureSession", {
   skip_if_no_session()
 
-  tool <- calculator_tool()
+  tool <- tool_calculator()
   session <- securer::SecureSession$new(tools = list(tool))
   on.exit(session$close())
 
@@ -24,13 +24,13 @@ test_that("calculator rejects unsafe code via SecureSession", {
   )
 })
 
-test_that("data_profile_tool works end-to-end via SecureSession", {
+test_that("tool_data_profile works end-to-end via SecureSession", {
   skip_if_no_session()
   # Data frames must serialize through JSON IPC, which converts them to
 
   # column-oriented lists. Use a tiny data frame (2 rows x 2 cols) to
   # keep serialization fast.
-  tool <- data_profile_tool()
+  tool <- tool_data_profile()
   session <- securer::SecureSession$new(tools = list(tool))
   on.exit(session$close())
 
@@ -46,8 +46,8 @@ test_that("data_profile_tool works end-to-end via SecureSession", {
 test_that("multiple tools work together via SecureSession", {
   skip_if_no_session()
 
-  calc <- calculator_tool()
-  profile <- data_profile_tool()
+  calc <- tool_calculator()
+  profile <- tool_data_profile()
   session <- securer::SecureSession$new(tools = list(calc, profile))
   on.exit(session$close())
 
@@ -58,10 +58,10 @@ test_that("multiple tools work together via SecureSession", {
   expect_equal(result, 4)
 })
 
-test_that("r_help_tool works end-to-end via SecureSession", {
+test_that("tool_r_help works end-to-end via SecureSession", {
   skip_if_no_session()
 
-  tool <- r_help_tool()
+  tool <- tool_r_help()
   session <- securer::SecureSession$new(tools = list(tool))
   on.exit(session$close())
 

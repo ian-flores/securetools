@@ -38,18 +38,18 @@
 #' @return A `securer_tool` object.
 #'
 #' @family tool factories
-#' @seealso \code{\link[securer]{securer_tool}}, \code{\link{read_file_tool}}
+#' @seealso \code{\link[securer]{securer_tool}}, \code{\link{tool_read_file}}
 #'
 #' @examples
 #' \donttest{
-#' tool <- write_file_tool(
+#' tool <- tool_write_file(
 #'   allowed_dirs = "/data/exports",
 #'   max_file_size = "5MB",
 #'   overwrite = FALSE
 #' )
 #' }
 #' @export
-write_file_tool <- function(allowed_dirs, max_file_size = "10MB",
+tool_write_file <- function(allowed_dirs, max_file_size = "10MB",
                             max_calls = NULL, overwrite = FALSE) {
   # Factory argument validation
   if (!is.character(allowed_dirs) || length(allowed_dirs) == 0L) {
@@ -147,4 +147,12 @@ write_file_tool <- function(allowed_dirs, max_file_size = "10MB",
     },
     args = list(path = "character", content = "list", format = "character")
   )
+}
+
+#' @rdname tool_write_file
+#' @param ... Arguments passed to [tool_write_file()].
+#' @export
+write_file_tool <- function(...) {
+  lifecycle::deprecate_warn("0.3.0", "write_file_tool()", "tool_write_file()")
+  tool_write_file(...)
 }

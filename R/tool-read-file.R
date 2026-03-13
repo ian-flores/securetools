@@ -37,14 +37,14 @@
 #'
 #' @examples
 #' \donttest{
-#' tool <- read_file_tool(
+#' tool <- tool_read_file(
 #'   allowed_dirs = c("/data/reports", "/data/exports"),
 #'   max_file_size = "10MB",
 #'   max_rows = 5000
 #' )
 #' }
 #' @export
-read_file_tool <- function(allowed_dirs, max_file_size = "50MB", max_rows = 10000,
+tool_read_file <- function(allowed_dirs, max_file_size = "50MB", max_rows = 10000,
                            max_calls = NULL) {
   # Factory argument validation
   if (!is.character(allowed_dirs) || length(allowed_dirs) == 0L) {
@@ -89,6 +89,14 @@ read_file_tool <- function(allowed_dirs, max_file_size = "50MB", max_rows = 1000
     },
     args = list(path = "character", format = "character")
   )
+}
+
+#' @rdname tool_read_file
+#' @param ... Arguments passed to [tool_read_file()].
+#' @export
+read_file_tool <- function(...) {
+  lifecycle::deprecate_warn("0.3.0", "read_file_tool()", "tool_read_file()")
+  tool_read_file(...)
 }
 
 #' Detect file format from extension

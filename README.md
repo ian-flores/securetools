@@ -72,9 +72,9 @@ library(securetools)
 library(securer)
 
 # Create tools with security constraints
-calc <- calculator_tool()
-reader <- read_file_tool(allowed_dirs = "/data", max_file_size = "50MB")
-sql <- query_sql_tool(conn = con, allowed_tables = c("users", "orders"))
+calc <- tool_calculator()
+reader <- tool_read_file(allowed_dirs = "/data", max_file_size = "50MB")
+sql <- tool_query_sql(conn = con, allowed_tables = c("users", "orders"))
 
 # Use with SecureSession
 session <- SecureSession$new(tools = list(calc, reader, sql))
@@ -87,18 +87,18 @@ session$close()
 
 | Tool | Factory | Security Features |
 |------|---------|-------------------|
-| Calculator | `calculator_tool()` | AST validation, no code injection |
-| Data Profile | `data_profile_tool()` | Row sampling for large data |
-| Read File | `read_file_tool()` | Path scoping, size limits |
-| Write File | `write_file_tool()` | Path scoping, overwrite protection |
-| SQL Query | `query_sql_tool()` | Table allow-list, parameterized queries |
-| URL Fetch | `fetch_url_tool()` | Domain allow-list, rate limiting |
-| Plot | `plot_tool()` | Path scoping, output size limits |
-| R Help | `r_help_tool()` | Package allow-list |
+| Calculator | `tool_calculator()` | AST validation, no code injection |
+| Data Profile | `tool_data_profile()` | Row sampling for large data |
+| Read File | `tool_read_file()` | Path scoping, size limits |
+| Write File | `tool_write_file()` | Path scoping, overwrite protection |
+| SQL Query | `tool_query_sql()` | Table allow-list, parameterized queries |
+| URL Fetch | `tool_fetch_url()` | Domain allow-list, rate limiting |
+| Plot | `tool_plot()` | Path scoping, output size limits |
+| R Help | `tool_r_help()` | Package allow-list |
 
 ## Design Principles
 
-- **Factory functions**: `read_file_tool(allowed_dirs = "/data")` forces
+- **Factory functions**: `tool_read_file(allowed_dirs = "/data")` forces
   explicit security configuration
 - **Parent-side enforcement**: Tool constraints run in the host process,
   not the sandbox. Even sandbox bypass leaves tool protections intact

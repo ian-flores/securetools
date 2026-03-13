@@ -28,10 +28,10 @@
 #'
 #' @examples
 #' \donttest{
-#' tool <- data_profile_tool(max_rows = 50000, max_calls = 10)
+#' tool <- tool_data_profile(max_rows = 50000, max_calls = 10)
 #' }
 #' @export
-data_profile_tool <- function(max_rows = 100000, max_calls = NULL) {
+tool_data_profile <- function(max_rows = 100000, max_calls = NULL) {
   # Factory argument validation
   if (!is.numeric(max_rows) || length(max_rows) != 1L || max_rows < 1L) {
     cli_abort("{.arg max_rows} must be a positive number.")
@@ -129,4 +129,12 @@ data_profile_tool <- function(max_rows = 100000, max_calls = NULL) {
     },
     args = list(data = "list")
   )
+}
+
+#' @rdname tool_data_profile
+#' @param ... Arguments passed to [tool_data_profile()].
+#' @export
+data_profile_tool <- function(...) {
+  lifecycle::deprecate_warn("0.3.0", "data_profile_tool()", "tool_data_profile()")
+  tool_data_profile(...)
 }

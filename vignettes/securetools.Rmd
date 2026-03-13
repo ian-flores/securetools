@@ -107,7 +107,7 @@ and numeric literals are present. Variable access, assignment, and
 arbitrary function calls are all rejected before evaluation ever occurs.
 
 ```{r calculator}
-calc <- calculator_tool()
+calc <- tool_calculator()
 session <- SecureSession$new(tools = list(calc))
 
 session$execute('calculator(expression = "sqrt(144) + 2^3")')
@@ -137,13 +137,13 @@ write access to the same directory:
 # Only allow access to a specific directory
 data_dir <- "/path/to/project/data"
 
-reader <- read_file_tool(
+reader <- tool_read_file(
   allowed_dirs = data_dir,
   max_file_size = "50MB",
   max_rows = 10000
 )
 
-writer <- write_file_tool(
+writer <- tool_write_file(
   allowed_dirs = data_dir,
   max_file_size = "10MB",
   overwrite = FALSE
@@ -179,7 +179,7 @@ content) into running `DROP TABLE`, `UNION SELECT` for data exfiltration, or
 queries help, but they still require the developer to use them correctly.
 
 securetools eliminates the attack surface entirely: the agent never writes SQL
-at all. The `query_sql_tool()` exposes a structured interface where
+at all. The `tool_query_sql()` exposes a structured interface where
 the agent specifies a table name, column list, and optional filter.
 The tool constructs the SQL internally using parameterized queries.
 Injection is structurally impossible
@@ -202,7 +202,7 @@ SQL injection patterns before being interpolated into the query.
 library(DBI)
 con <- dbConnect(RSQLite::SQLite(), "app.db")
 
-sql_tool <- query_sql_tool(
+sql_tool <- tool_query_sql(
 
   conn = con,
   allowed_tables = c("users", "orders"),
@@ -240,7 +240,7 @@ The URL fetch tool constrains network access with domain allow-lists
 rate limiting:
 
 ```{r fetch}
-fetcher <- fetch_url_tool(
+fetcher <- tool_fetch_url(
   allowed_domains = c("api.github.com", "*.githubusercontent.com"),
   max_response_size = "1MB",
   timeout_secs = 30,
@@ -260,14 +260,14 @@ session$close()
 ### Data profiling
 
 The threat: profiling enormous datasets without limits can exhaust
-memory and crash the host process. The `data_profile_tool()` enforces
+memory and crash the host process. The `tool_data_profile()` enforces
 row limits through sampling, so multi-million-row data
 frames are summarized safely without consuming all available memory.
 
 Compute summary statistics for data frames:
 
 ```{r profile}
-profiler <- data_profile_tool(max_rows = 100000)
+profiler <- tool_data_profile(max_rows = 100000)
 session <- SecureSession$new(tools = list(profiler))
 
 session$execute('
@@ -291,7 +291,7 @@ is also path-scoped and size-limited to prevent writing oversized files
 to arbitrary locations:
 
 ```{r plot}
-plotter <- plot_tool(
+plotter <- tool_plot(
   allowed_dirs = "/path/to/output",
   max_file_size = "5MB"
 )
@@ -317,10 +317,10 @@ but it can leak information about installed packages and system
 configuration. The `allowed_packages` parameter restricts which packages
 can be queried, keeping the agent's awareness scoped to what you intend.
 
-The `r_help_tool()` gives safe access to R documentation:
+The `tool_r_help()` gives safe access to R documentation:
 
 ```{r r-help}
-help_tool <- r_help_tool(allowed_packages = c("base", "stats", "utils"))
+help_tool <- tool_r_help(allowed_packages = c("base", "stats", "utils"))
 
 session <- SecureSession$new(tools = list(help_tool))
 
@@ -380,17 +380,17 @@ limits impose a hard boundary independent of the LLM's
 decision-making.
 
 All tool factories accept `max_calls` for lifetime rate limiting. Some
-tools (like `fetch_url_tool()`) also support `max_calls_per_minute` for
+tools (like `tool_fetch_url()`) also support `max_calls_per_minute` for
 sliding-window throttling. When a limit is hit, the tool returns an
 error message to the LLM rather than silently failing, giving the
 agent a chance to adjust its strategy:
 
 ```{r rate-limit}
 # Allow only 100 calculator evaluations per session
-calc <- calculator_tool(max_calls = 100)
+calc <- tool_calculator(max_calls = 100)
 
 # URL fetch with both lifetime and per-minute limits
-fetcher <- fetch_url_tool(
+fetcher <- tool_fetch_url(
   max_calls = 1000,
   max_calls_per_minute = 10
 )
@@ -400,11 +400,11 @@ fetcher <- fetch_url_tool(
 
 | Tool | Factory | Key Security Features |
 |------|---------|----------------------|
-| Calculator | `calculator_tool()` | AST validation, no code injection |
-| Data Profile | `data_profile_tool()` | Row sampling for large data |
-| Read File | `read_file_tool()` | Path scoping, size limits |
-| Write File | `write_file_tool()` | Path scoping, size limits, overwrite protection |
-| SQL Query | `query_sql_tool()` | Table allow-list, parameterized queries |
-| URL Fetch | `fetch_url_tool()` | Domain allow-list, rate limiting |
-| Plot | `plot_tool()` | Path scoping, output size limits |
-| R Help | `r_help_tool()` | Package allow-list |
+| Calculator | `tool_calculator()` | AST validation, no code injection |
+| Data Profile | `tool_data_profile()` | Row sampling for large data |
+| Read File | `tool_read_file()` | Path scoping, size limits |
+| Write File | `tool_write_file()` | Path scoping, size limits, overwrite protection |
+| SQL Query | `tool_query_sql()` | Table allow-list, parameterized queries |
+| URL Fetch | `tool_fetch_url()` | Domain allow-list, rate limiting |
+| Plot | `tool_plot()` | Path scoping, output size limits |
+| R Help | `tool_r_help()` | Package allow-list |

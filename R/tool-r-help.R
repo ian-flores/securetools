@@ -25,13 +25,13 @@
 #'
 #' @examples
 #' \donttest{
-#' tool <- r_help_tool(
+#' tool <- tool_r_help(
 #'   allowed_packages = c("base", "stats", "utils"),
 #'   max_lines = 200
 #' )
 #' }
 #' @export
-r_help_tool <- function(allowed_packages = c("base", "stats", "utils",
+tool_r_help <- function(allowed_packages = c("base", "stats", "utils",
                                               "methods", "grDevices",
                                               "graphics", "datasets"),
                         max_lines = 100, max_calls = NULL) {
@@ -94,4 +94,12 @@ r_help_tool <- function(allowed_packages = c("base", "stats", "utils",
     },
     args = list(topic = "character", package = "character")
   )
+}
+
+#' @rdname tool_r_help
+#' @param ... Arguments passed to [tool_r_help()].
+#' @export
+r_help_tool <- function(...) {
+  lifecycle::deprecate_warn("0.3.0", "r_help_tool()", "tool_r_help()")
+  tool_r_help(...)
 }

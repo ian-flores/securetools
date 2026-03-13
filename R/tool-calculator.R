@@ -93,7 +93,7 @@ validate_calc_ast <- function(expr) {
 #'
 #' @examples
 #' \donttest{
-#' calc <- calculator_tool()
+#' calc <- tool_calculator()
 #' # Basic arithmetic
 #' calc@fn(expression = "2 + 3 * 4")
 #'
@@ -101,11 +101,11 @@ validate_calc_ast <- function(expr) {
 #' calc@fn(expression = "sqrt(144) + log(exp(1))")
 #'
 #' # With rate limiting
-#' calc <- calculator_tool(max_calls = 100)
+#' calc <- tool_calculator(max_calls = 100)
 #' }
 #'
 #' @export
-calculator_tool <- function(max_calls = NULL) {
+tool_calculator <- function(max_calls = NULL) {
   if (!is.null(max_calls) && (!is.numeric(max_calls) || length(max_calls) != 1L || max_calls < 1L)) {
     cli_abort("{.arg max_calls} must be NULL or a positive number.")
   }
@@ -154,4 +154,12 @@ calculator_tool <- function(max_calls = NULL) {
     },
     args = list(expression = "character")
   )
+}
+
+#' @rdname tool_calculator
+#' @param ... Arguments passed to [tool_calculator()].
+#' @export
+calculator_tool <- function(...) {
+  lifecycle::deprecate_warn("0.3.0", "calculator_tool()", "tool_calculator()")
+  tool_calculator(...)
 }

@@ -14,6 +14,7 @@
 #' @importFrom R6 R6Class
 #' @importFrom rlang abort caller_env
 #' @importFrom cli cli_abort cli_warn
+#' @importFrom lifecycle deprecate_warn deprecated
 #' @importFrom utils getFromNamespace
 ## usethis namespace: end
 NULL

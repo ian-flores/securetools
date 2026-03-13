@@ -141,7 +141,7 @@
 #'
 #' @examples
 #' \donttest{
-#' plt <- plot_tool(allowed_dirs = tempdir())
+#' plt <- tool_plot(allowed_dirs = tempdir())
 #' # Basic scatter plot
 #' plt@fn(
 #'   path = file.path(tempdir(), "scatter.png"),
@@ -149,7 +149,7 @@
 #' )
 #'
 #' # With custom dimensions and DPI
-#' plt <- plot_tool(
+#' plt <- tool_plot(
 #'   allowed_dirs = tempdir(),
 #'   default_width = 10,
 #'   default_height = 8,
@@ -158,7 +158,7 @@
 #' }
 #'
 #' @export
-plot_tool <- function(allowed_dirs, default_width = 8, default_height = 6,
+tool_plot <- function(allowed_dirs, default_width = 8, default_height = 6,
                       max_file_size = "5MB", max_calls = NULL,
                       default_dpi = 150) {
   if (!is.character(allowed_dirs) || length(allowed_dirs) == 0L) {
@@ -269,4 +269,12 @@ plot_tool <- function(allowed_dirs, default_width = 8, default_height = 6,
       format = "character"
     )
   )
+}
+
+#' @rdname tool_plot
+#' @param ... Arguments passed to [tool_plot()].
+#' @export
+plot_tool <- function(...) {
+  lifecycle::deprecate_warn("0.3.0", "plot_tool()", "tool_plot()")
+  tool_plot(...)
 }

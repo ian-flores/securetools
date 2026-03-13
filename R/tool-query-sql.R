@@ -33,16 +33,16 @@
 #'
 #' @examples
 #' \donttest{
-#' tool <- query_sql_tool(
+#' tool <- tool_query_sql(
 #'   conn = DBI::dbConnect(RSQLite::SQLite(), ":memory:"),
 #'   allowed_tables = c("customers", "orders"),
 #'   max_rows = 500
 #' )
 #' }
 #' @export
-query_sql_tool <- function(conn, allowed_tables, max_rows = 1000,
+tool_query_sql <- function(conn, allowed_tables, max_rows = 1000,
                            max_calls = NULL) {
-  rlang::check_installed("DBI", reason = "to use query_sql_tool()")
+  rlang::check_installed("DBI", reason = "to use tool_query_sql()")
 
   # Factory argument validation
   if (!inherits(conn, "DBIConnection")) {
@@ -126,4 +126,12 @@ query_sql_tool <- function(conn, allowed_tables, max_rows = 1000,
       filter_value = "character"
     )
   )
+}
+
+#' @rdname tool_query_sql
+#' @param ... Arguments passed to [tool_query_sql()].
+#' @export
+query_sql_tool <- function(...) {
+  lifecycle::deprecate_warn("0.3.0", "query_sql_tool()", "tool_query_sql()")
+  tool_query_sql(...)
 }

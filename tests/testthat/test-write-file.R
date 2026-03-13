@@ -1,6 +1,6 @@
-test_that("write_file_tool writes CSV from data frame", {
+test_that("tool_write_file writes CSV from data frame", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
   out <- file.path(dir, "data.csv")
 
   result <- tool@fn(path = out, content = iris[1:3, ])
@@ -11,9 +11,9 @@ test_that("write_file_tool writes CSV from data frame", {
   expect_equal(result$format, "csv")
 })
 
-test_that("write_file_tool writes JSON", {
+test_that("tool_write_file writes JSON", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
   out <- file.path(dir, "data.json")
 
   result <- tool@fn(path = out, content = list(a = 1, b = "hello"))
@@ -25,9 +25,9 @@ test_that("write_file_tool writes JSON", {
   expect_equal(result$format, "json")
 })
 
-test_that("write_file_tool writes text", {
+test_that("tool_write_file writes text", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
   out <- file.path(dir, "notes.txt")
 
   result <- tool@fn(path = out, content = c("line 1", "line 2"))
@@ -38,9 +38,9 @@ test_that("write_file_tool writes text", {
   expect_equal(result$format, "txt")
 })
 
-test_that("write_file_tool writes RDS", {
+test_that("tool_write_file writes RDS", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
   out <- file.path(dir, "model.rds")
 
   payload <- list(x = 1:10, y = letters[1:5])
@@ -52,10 +52,10 @@ test_that("write_file_tool writes RDS", {
   expect_equal(result$format, "rds")
 })
 
-test_that("write_file_tool rejects path outside allowed dirs", {
+test_that("tool_write_file rejects path outside allowed dirs", {
   dir <- make_test_dir()
   other <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
 
   expect_error(
     tool@fn(path = file.path(other, "bad.txt"), content = "nope"),
@@ -63,9 +63,9 @@ test_that("write_file_tool rejects path outside allowed dirs", {
   )
 })
 
-test_that("write_file_tool rejects overwrite when overwrite = FALSE", {
+test_that("tool_write_file rejects overwrite when overwrite = FALSE", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir, overwrite = FALSE)
+  tool <- tool_write_file(allowed_dirs = dir, overwrite = FALSE)
   out <- file.path(dir, "existing.txt")
   writeLines("original", out)
 
@@ -77,9 +77,9 @@ test_that("write_file_tool rejects overwrite when overwrite = FALSE", {
   expect_equal(readLines(out), "original")
 })
 
-test_that("write_file_tool allows overwrite when overwrite = TRUE", {
+test_that("tool_write_file allows overwrite when overwrite = TRUE", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir, overwrite = TRUE)
+  tool <- tool_write_file(allowed_dirs = dir, overwrite = TRUE)
   out <- file.path(dir, "existing.txt")
   writeLines("original", out)
 
@@ -87,9 +87,9 @@ test_that("write_file_tool allows overwrite when overwrite = TRUE", {
   expect_equal(readLines(out), "updated")
 })
 
-test_that("write_file_tool enforces size limit", {
+test_that("tool_write_file enforces size limit", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir, max_file_size = "100B")
+  tool <- tool_write_file(allowed_dirs = dir, max_file_size = "100B")
 
   # Create content larger than 100 bytes
   big <- paste(rep("x", 200), collapse = "")
@@ -101,9 +101,9 @@ test_that("write_file_tool enforces size limit", {
   expect_false(file.exists(file.path(dir, "big.txt")))
 })
 
-test_that("write_file_tool auto-detects format from extension", {
+test_that("tool_write_file auto-detects format from extension", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
 
   # csv
   result_csv <- tool@fn(
@@ -134,9 +134,9 @@ test_that("write_file_tool auto-detects format from extension", {
   expect_equal(result_rds$format, "rds")
 })
 
-test_that("write_file_tool rejects unknown extension in auto mode", {
+test_that("tool_write_file rejects unknown extension in auto mode", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
 
   expect_error(
     tool@fn(path = file.path(dir, "out.xyz"), content = "data"),
@@ -144,9 +144,9 @@ test_that("write_file_tool rejects unknown extension in auto mode", {
   )
 })
 
-test_that("write_file_tool rate limiting works", {
+test_that("tool_write_file rate limiting works", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir, max_calls = 2)
+  tool <- tool_write_file(allowed_dirs = dir, max_calls = 2)
 
   tool@fn(path = file.path(dir, "a.txt"), content = "a")
   tool@fn(path = file.path(dir, "b.txt"), content = "b")
@@ -156,16 +156,16 @@ test_that("write_file_tool rate limiting works", {
   )
 })
 
-test_that("write_file_tool returns securer_tool object", {
+test_that("tool_write_file returns securer_tool object", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
   expect_s3_class(tool, "securer::securer_tool")
   expect_equal(tool@name, "write_file")
 })
 
-test_that("write_file_tool CSV rejects non-data-frame content", {
+test_that("tool_write_file CSV rejects non-data-frame content", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
 
   expect_error(
     tool@fn(path = file.path(dir, "bad.csv"), content = "not a df"),
@@ -173,31 +173,31 @@ test_that("write_file_tool CSV rejects non-data-frame content", {
   )
 })
 
-test_that("write_file_tool explicit format overrides extension", {
+test_that("tool_write_file explicit format overrides extension", {
   dir <- make_test_dir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
 
   # Write text content to a .dat file using explicit format
   tool@fn(path = file.path(dir, "out.txt"), content = "hello", format = "txt")
   expect_equal(readLines(file.path(dir, "out.txt")), "hello")
 })
 
-test_that("write_file_tool rejects path traversal", {
+test_that("tool_write_file rejects path traversal", {
   dir <- withr::local_tempdir()
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
   expect_error(
     tool@fn(path = file.path(dir, "..", "escaped.txt"), content = "evil", format = "txt"),
     "[Oo]utside|not allowed"
   )
 })
 
-test_that("write_file_tool rejects symlink escape", {
+test_that("tool_write_file rejects symlink escape", {
   skip_on_os("windows")
   dir <- withr::local_tempdir()
   outside <- withr::local_tempdir()
   link <- file.path(dir, "escape")
   file.symlink(outside, link)
-  tool <- write_file_tool(allowed_dirs = dir)
+  tool <- tool_write_file(allowed_dirs = dir)
   expect_error(
     tool@fn(path = file.path(link, "evil.txt"), content = "data", format = "txt"),
     "[Oo]utside|not allowed"

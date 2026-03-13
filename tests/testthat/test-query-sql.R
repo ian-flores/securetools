@@ -8,7 +8,7 @@ test_that("query_sql queries all columns", {
     id = 1:3, name = c("Alice", "Bob", "Charlie"), age = c(30, 25, 35)
   ))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"))
+  tool <- tool_query_sql(con, allowed_tables = c("users"))
   result <- tool@fn(table = "users")
 
   expect_equal(nrow(result), 3)
@@ -25,7 +25,7 @@ test_that("query_sql selects specific columns", {
     id = 1:3, name = c("Alice", "Bob", "Charlie"), age = c(30, 25, 35)
   ))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"))
+  tool <- tool_query_sql(con, allowed_tables = c("users"))
   result <- tool@fn(table = "users", columns = "name, age")
 
   expect_equal(nrow(result), 3)
@@ -42,7 +42,7 @@ test_that("query_sql filters with parameterized query", {
     id = 1:3, name = c("Alice", "Bob", "Charlie"), age = c(30, 25, 35)
   ))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"))
+  tool <- tool_query_sql(con, allowed_tables = c("users"))
   result <- tool@fn(table = "users", filter_column = "name", filter_value = "Bob")
 
   expect_equal(nrow(result), 1)
@@ -59,7 +59,7 @@ test_that("query_sql rejects table not in allow-list", {
   DBI::dbWriteTable(con, "users", data.frame(id = 1:3, name = c("A", "B", "C")))
   DBI::dbWriteTable(con, "secrets", data.frame(id = 1, token = "s3cret"))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"))
+  tool <- tool_query_sql(con, allowed_tables = c("users"))
   expect_error(tool@fn(table = "secrets"), "not allowed")
 })
 
@@ -71,7 +71,7 @@ test_that("query_sql rejects SQL injection in table name", {
   on.exit(DBI::dbDisconnect(con))
   DBI::dbWriteTable(con, "users", data.frame(id = 1:3, name = c("A", "B", "C")))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"))
+  tool <- tool_query_sql(con, allowed_tables = c("users"))
   expect_error(tool@fn(table = "users; DROP TABLE users"), "Invalid table name")
 })
 
@@ -83,7 +83,7 @@ test_that("query_sql rejects SQL injection in column name", {
   on.exit(DBI::dbDisconnect(con))
   DBI::dbWriteTable(con, "users", data.frame(id = 1:3, name = c("A", "B", "C")))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"))
+  tool <- tool_query_sql(con, allowed_tables = c("users"))
   expect_error(
     tool@fn(table = "users", columns = "name; DROP TABLE users"),
     "Invalid column name"
@@ -100,7 +100,7 @@ test_that("query_sql safely handles injection in filter_value via parameterized 
     id = 1:3, name = c("Alice", "Bob", "Charlie"), age = c(30, 25, 35)
   ))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"))
+  tool <- tool_query_sql(con, allowed_tables = c("users"))
   # Parameterized query treats this as a literal string value, not SQL
   result <- tool@fn(
     table = "users",
@@ -124,7 +124,7 @@ test_that("query_sql respects max_rows", {
     id = 1:100, val = rnorm(100)
   ))
 
-  tool <- query_sql_tool(con, allowed_tables = c("big"), max_rows = 5)
+  tool <- tool_query_sql(con, allowed_tables = c("big"), max_rows = 5)
   result <- tool@fn(table = "big")
 
   expect_equal(nrow(result), 5)
@@ -138,20 +138,20 @@ test_that("query_sql rate limiting works", {
   on.exit(DBI::dbDisconnect(con))
   DBI::dbWriteTable(con, "users", data.frame(id = 1, name = "Alice"))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"), max_calls = 2)
+  tool <- tool_query_sql(con, allowed_tables = c("users"), max_calls = 2)
   tool@fn(table = "users")
   tool@fn(table = "users")
   expect_error(tool@fn(table = "users"), "Rate limit")
 })
 
-test_that("query_sql_tool returns securer_tool object", {
+test_that("tool_query_sql returns securer_tool object", {
   skip_if_not_installed("DBI")
   skip_if_not_installed("RSQLite")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con))
 
-  tool <- query_sql_tool(con, allowed_tables = c("users"))
+  tool <- tool_query_sql(con, allowed_tables = c("users"))
   expect_s3_class(tool, "securer::securer_tool")
   expect_equal(tool@name, "query_sql")
 })
@@ -162,7 +162,7 @@ test_that("query_sql handles empty result set", {
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con))
   DBI::dbWriteTable(con, "t", data.frame(id = 1:3, name = c("a", "b", "c")))
-  tool <- query_sql_tool(conn = con, allowed_tables = "t")
+  tool <- tool_query_sql(conn = con, allowed_tables = "t")
   result <- tool@fn(table = "t", filter_column = "id", filter_value = "999")
   expect_equal(nrow(result), 0)
 })
