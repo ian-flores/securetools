@@ -2,7 +2,6 @@
 % Please edit documentation in R/tool-fetch-url.R
 \name{tool_fetch_url}
 \alias{tool_fetch_url}
-\alias{fetch_url_tool}
 \title{Create a URL fetch tool}
 \usage{
 tool_fetch_url(
@@ -12,8 +11,6 @@ tool_fetch_url(
   max_calls = NULL,
   max_calls_per_minute = 10
 )
-
-fetch_url_tool(...)
 }
 \arguments{
 \item{allowed_domains}{Character vector of allowed domains (required). Use
@@ -27,8 +24,6 @@ bare domain itself.}
 \item{max_calls}{Maximum lifetime invocations. \code{NULL} means unlimited.}
 
 \item{max_calls_per_minute}{Maximum invocations per 60-second window. Default 10.}
-
-\item{...}{Arguments passed to \code{\link[=tool_fetch_url]{tool_fetch_url()}}.}
 }
 \value{
 A \code{securer_tool} object.

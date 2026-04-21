@@ -91,14 +91,6 @@ tool_read_file <- function(allowed_dirs, max_file_size = "50MB", max_rows = 1000
   )
 }
 
-#' @rdname tool_read_file
-#' @param ... Arguments passed to [tool_read_file()].
-#' @export
-read_file_tool <- function(...) {
-  lifecycle::deprecate_warn("0.3.0", "read_file_tool()", "tool_read_file()")
-  tool_read_file(...)
-}
-
 #' Detect file format from extension
 #'
 #' @param path Character(1). Path to the file.

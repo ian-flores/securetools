@@ -2,18 +2,13 @@
 % Please edit documentation in R/tool-calculator.R
 \name{tool_calculator}
 \alias{tool_calculator}
-\alias{calculator_tool}
 \title{Create a calculator tool}
 \usage{
 tool_calculator(max_calls = NULL)
-
-calculator_tool(...)
 }
 \arguments{
 \item{max_calls}{Maximum number of invocations allowed. \code{NULL} (default)
 means unlimited.}
-
-\item{...}{Arguments passed to \code{\link[=tool_calculator]{tool_calculator()}}.}
 }
 \value{
 A \code{securer_tool} object.

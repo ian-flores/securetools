@@ -2,7 +2,6 @@
 % Please edit documentation in R/tool-r-help.R
 \name{tool_r_help}
 \alias{tool_r_help}
-\alias{r_help_tool}
 \title{Create an R help documentation tool}
 \usage{
 tool_r_help(
@@ -11,8 +10,6 @@ tool_r_help(
   max_lines = 100,
   max_calls = NULL
 )
-
-r_help_tool(...)
 }
 \arguments{
 \item{allowed_packages}{Character vector of packages the tool can look up
@@ -21,8 +18,6 @@ documentation from. Default includes base R packages.}
 \item{max_lines}{Maximum lines of help text to return. Default 100.}
 
 \item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
-
-\item{...}{Arguments passed to \code{\link[=tool_r_help]{tool_r_help()}}.}
 }
 \value{
 A \code{securer_tool} object.

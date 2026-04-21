@@ -2,7 +2,6 @@
 % Please edit documentation in R/tool-write-file.R
 \name{tool_write_file}
 \alias{tool_write_file}
-\alias{write_file_tool}
 \title{Create a file writing tool}
 \usage{
 tool_write_file(
@@ -11,8 +10,6 @@ tool_write_file(
   max_calls = NULL,
   overwrite = FALSE
 )
-
-write_file_tool(...)
 }
 \arguments{
 \item{allowed_dirs}{Character vector of directories the tool can write to.}
@@ -22,8 +19,6 @@ write_file_tool(...)
 \item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
 
 \item{overwrite}{Whether to allow overwriting existing files. Default \code{FALSE}.}
-
-\item{...}{Arguments passed to \code{\link[=tool_write_file]{tool_write_file()}}.}
 }
 \value{
 A \code{securer_tool} object.

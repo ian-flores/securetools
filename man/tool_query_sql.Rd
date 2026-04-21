@@ -2,12 +2,9 @@
 % Please edit documentation in R/tool-query-sql.R
 \name{tool_query_sql}
 \alias{tool_query_sql}
-\alias{query_sql_tool}
 \title{Create a SQL query tool}
 \usage{
 tool_query_sql(conn, allowed_tables, max_rows = 1000, max_calls = NULL)
-
-query_sql_tool(...)
 }
 \arguments{
 \item{conn}{A DBI connection object.}
@@ -17,8 +14,6 @@ query_sql_tool(...)
 \item{max_rows}{Maximum rows returned. Default 1000.}
 
 \item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
-
-\item{...}{Arguments passed to \code{\link[=tool_query_sql]{tool_query_sql()}}.}
 }
 \value{
 A \code{securer_tool} object.

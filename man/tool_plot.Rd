@@ -2,7 +2,6 @@
 % Please edit documentation in R/tool-plot.R
 \name{tool_plot}
 \alias{tool_plot}
-\alias{plot_tool}
 \title{Create a plot rendering tool}
 \usage{
 tool_plot(
@@ -13,8 +12,6 @@ tool_plot(
   max_calls = NULL,
   default_dpi = 150
 )
-
-plot_tool(...)
 }
 \arguments{
 \item{allowed_dirs}{Character vector of directories the tool can write to.}
@@ -29,8 +26,6 @@ plot_tool(...)
 
 \item{default_dpi}{Default resolution in dots per inch for raster formats
 (png, jpg). Default 150.}
-
-\item{...}{Arguments passed to \code{\link[=tool_plot]{tool_plot()}}.}
 }
 \value{
 A \code{securer_tool} object.

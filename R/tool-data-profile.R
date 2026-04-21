@@ -131,10 +131,3 @@ tool_data_profile <- function(max_rows = 100000, max_calls = NULL) {
   )
 }
 
-#' @rdname tool_data_profile
-#' @param ... Arguments passed to [tool_data_profile()].
-#' @export
-data_profile_tool <- function(...) {
-  lifecycle::deprecate_warn("0.3.0", "data_profile_tool()", "tool_data_profile()")
-  tool_data_profile(...)
-}

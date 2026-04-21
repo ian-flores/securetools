@@ -156,10 +156,3 @@ tool_calculator <- function(max_calls = NULL) {
   )
 }
 
-#' @rdname tool_calculator
-#' @param ... Arguments passed to [tool_calculator()].
-#' @export
-calculator_tool <- function(...) {
-  lifecycle::deprecate_warn("0.3.0", "calculator_tool()", "tool_calculator()")
-  tool_calculator(...)
-}

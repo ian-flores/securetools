@@ -271,10 +271,3 @@ tool_plot <- function(allowed_dirs, default_width = 8, default_height = 6,
   )
 }
 
-#' @rdname tool_plot
-#' @param ... Arguments passed to [tool_plot()].
-#' @export
-plot_tool <- function(...) {
-  lifecycle::deprecate_warn("0.3.0", "plot_tool()", "tool_plot()")
-  tool_plot(...)
-}

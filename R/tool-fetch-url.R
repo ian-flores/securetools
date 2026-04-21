@@ -166,14 +166,6 @@ tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
   )
 }
 
-#' @rdname tool_fetch_url
-#' @param ... Arguments passed to [tool_fetch_url()].
-#' @export
-fetch_url_tool <- function(...) {
-  lifecycle::deprecate_warn("0.3.0", "fetch_url_tool()", "tool_fetch_url()")
-  tool_fetch_url(...)
-}
-
 #' Check if a string looks like an IP literal (not a hostname)
 #'
 #' @param host Character(1). A hostname or IP address string.

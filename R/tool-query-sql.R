@@ -128,10 +128,3 @@ tool_query_sql <- function(conn, allowed_tables, max_rows = 1000,
   )
 }
 
-#' @rdname tool_query_sql
-#' @param ... Arguments passed to [tool_query_sql()].
-#' @export
-query_sql_tool <- function(...) {
-  lifecycle::deprecate_warn("0.3.0", "query_sql_tool()", "tool_query_sql()")
-  tool_query_sql(...)
-}

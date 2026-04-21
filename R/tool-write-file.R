@@ -149,10 +149,3 @@ tool_write_file <- function(allowed_dirs, max_file_size = "10MB",
   )
 }
 
-#' @rdname tool_write_file
-#' @param ... Arguments passed to [tool_write_file()].
-#' @export
-write_file_tool <- function(...) {
-  lifecycle::deprecate_warn("0.3.0", "write_file_tool()", "tool_write_file()")
-  tool_write_file(...)
-}

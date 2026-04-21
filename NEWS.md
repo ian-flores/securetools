@@ -1,3 +1,28 @@
+# securetools 0.2.0
+
+## Breaking changes
+
+* Removed deprecated `*_tool()` aliases: `calculator_tool()`,
+  `query_sql_tool()`, `read_file_tool()`, `write_file_tool()`,
+  `fetch_url_tool()`, `plot_tool()`, `data_profile_tool()`, and
+  `r_help_tool()`. Use the `tool_*()` factories introduced in 0.1.0
+  instead. The old names have been warning since 0.1.0.
+
+## New features
+
+* `guarded_tool(tool, input_guards, output_guards)` — compose a
+  `securer_tool` with \pkg{secureguard} input/output guardrails.
+  Returns a drop-in `securer_tool` replacement that enforces the
+  guardrails on every invocation and surfaces failures as tool-call
+  errors.
+* `with_guards()` — pipe-friendly alias for `guarded_tool()`.
+
+## Dependencies
+
+* `lifecycle` dropped from Imports (deprecation duology removed).
+* `secureguard (>= 0.3.0)` added to Suggests for the new adapter.
+* Minimum `securer` bumped to 0.2.0.
+
 # securetools 0.1.0
 
 ## New Features

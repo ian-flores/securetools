@@ -2,20 +2,15 @@
 % Please edit documentation in R/tool-data-profile.R
 \name{tool_data_profile}
 \alias{tool_data_profile}
-\alias{data_profile_tool}
 \title{Create a data profiling tool}
 \usage{
 tool_data_profile(max_rows = 1e+05, max_calls = NULL)
-
-data_profile_tool(...)
 }
 \arguments{
 \item{max_rows}{Maximum rows to profile. Larger data frames are sampled.
 Default 100000.}
 
 \item{max_calls}{Maximum invocations allowed. \code{NULL} (default) means unlimited.}
-
-\item{...}{Arguments passed to \code{\link[=tool_data_profile]{tool_data_profile()}}.}
 }
 \value{
 A \code{securer_tool} object.

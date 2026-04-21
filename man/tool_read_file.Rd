@@ -2,7 +2,6 @@
 % Please edit documentation in R/tool-read-file.R
 \name{tool_read_file}
 \alias{tool_read_file}
-\alias{read_file_tool}
 \title{Create a file reading tool}
 \usage{
 tool_read_file(
@@ -11,8 +10,6 @@ tool_read_file(
   max_rows = 10000,
   max_calls = NULL
 )
-
-read_file_tool(...)
 }
 \arguments{
 \item{allowed_dirs}{Character vector of directories the tool can read from.}
@@ -23,8 +20,6 @@ string like \code{"10MB"}.}
 \item{max_rows}{Maximum rows for tabular formats. Default 10000.}
 
 \item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
-
-\item{...}{Arguments passed to \code{\link[=tool_read_file]{tool_read_file()}}.}
 }
 \value{
 A \code{securer_tool} object.
