@@ -68,6 +68,7 @@ guarded_tool <- function(tool,
   inner <- tool@fn
   args_schema <- tool@args
   name <- tool@name
+  description <- tool@description
 
   guarded_fn <- function(...) {
     call_args <- list(...)
@@ -106,9 +107,10 @@ guarded_tool <- function(tool,
   }
 
   securer::securer_tool(
-    name = name,
-    fn   = guarded_fn,
-    args = args_schema
+    name        = name,
+    description = description,
+    fn          = guarded_fn,
+    args        = args_schema
   )
 }
 

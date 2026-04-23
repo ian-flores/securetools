@@ -30,9 +30,10 @@ test_that("guarded_tool runs input guardrails and blocks on failure", {
 
 test_that("guarded_tool runs output guardrails", {
   leaky <- securer::securer_tool(
-    name = "leaky",
-    fn   = function() "AKIAIOSFODNN7EXAMPLE",
-    args = list()
+    name        = "leaky",
+    description = "Test tool that emits an AWS example key.",
+    fn          = function() "AKIAIOSFODNN7EXAMPLE",
+    args        = list()
   )
   block_secrets <- secureguard::guard_output_secrets(action = "block")
 
