@@ -7,30 +7,36 @@ reference:
 - title: File I/O
   desc: Tools for reading and writing files with path scoping and size limits.
   contents:
-  - read_file_tool
-  - write_file_tool
+  - tool_read_file
+  - tool_write_file
 
 - title: Database
   desc: Structured database queries with parameterized filters.
   contents:
-  - query_sql_tool
+  - tool_query_sql
 
 - title: Data Analysis
   desc: Tools for data profiling, calculation, and visualization.
   contents:
-  - data_profile_tool
-  - calculator_tool
-  - plot_tool
+  - tool_data_profile
+  - tool_calculator
+  - tool_plot
 
 - title: Web
   desc: HTTP fetch with domain allow-lists and rate limiting.
   contents:
-  - fetch_url_tool
+  - tool_fetch_url
 
 - title: Documentation
   desc: R help documentation lookup.
   contents:
-  - r_help_tool
+  - tool_r_help
+
+- title: Guardrail Composition
+  desc: Wrap tools with secureguard guardrails on input and output.
+  contents:
+  - guarded_tool
+  - with_guards
 
 articles:
 - title: Getting Started
