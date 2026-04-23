@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">securetools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,26 +35,48 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="securetools-020">securetools 0.2.0<a class="anchor" aria-label="anchor" href="#securetools-020"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-0"></a></h3>
+<ul><li>Removed deprecated <code>*_tool()</code> aliases: <code>calculator_tool()</code>, <code>query_sql_tool()</code>, <code>read_file_tool()</code>, <code>write_file_tool()</code>, <code>fetch_url_tool()</code>, <code>plot_tool()</code>, <code>data_profile_tool()</code>, and <code>r_help_tool()</code>. Use the <code>tool_*()</code> factories introduced in 0.1.0 instead. The old names have been warning since 0.1.0.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-0-2-0">New features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
+<ul><li>
+<code>guarded_tool(tool, input_guards, output_guards)</code> — compose a <code>securer_tool</code> with  input/output guardrails. Returns a drop-in <code>securer_tool</code> replacement that enforces the guardrails on every invocation and surfaces failures as tool-call errors.</li>
+<li>
+<code><a href="../reference/with_guards.html">with_guards()</a></code> — pipe-friendly alias for <code><a href="../reference/guarded_tool.html">guarded_tool()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="dependencies-0-2-0">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies-0-2-0"></a></h3>
+<ul><li>
+<code>lifecycle</code> dropped from Imports (deprecation duology removed).</li>
+<li>
+<code>secureguard (&gt;= 0.3.0)</code> added to Suggests for the new adapter.</li>
+<li>Minimum <code>securer</code> bumped to 0.2.0.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="securetools-010">securetools 0.1.0<a class="anchor" aria-label="anchor" href="#securetools-010"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-1-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-0"></a></h3>
 <ul><li>8 security-hardened tool factories for use with securer:
 <ul><li>
-<code><a href="../reference/tool_read_file.html">read_file_tool()</a></code> – Sandboxed file reading with path validation</li>
+<code>read_file_tool()</code> – Sandboxed file reading with path validation</li>
 <li>
-<code><a href="../reference/tool_write_file.html">write_file_tool()</a></code> – Sandboxed file writing with size limits</li>
+<code>write_file_tool()</code> – Sandboxed file writing with size limits</li>
 <li>
-<code><a href="../reference/tool_calculator.html">calculator_tool()</a></code> – Safe expression evaluation with AST validation</li>
+<code>calculator_tool()</code> – Safe expression evaluation with AST validation</li>
 <li>
-<code><a href="../reference/tool_query_sql.html">query_sql_tool()</a></code> – Structured SQL queries with parameterized filters</li>
+<code>query_sql_tool()</code> – Structured SQL queries with parameterized filters</li>
 <li>
-<code><a href="../reference/tool_fetch_url.html">fetch_url_tool()</a></code> – HTTP fetching with domain allowlists and SSRF protection</li>
+<code>fetch_url_tool()</code> – HTTP fetching with domain allowlists and SSRF protection</li>
 <li>
-<code><a href="../reference/tool_plot.html">plot_tool()</a></code> – Plot generation with restricted code evaluation</li>
+<code>plot_tool()</code> – Plot generation with restricted code evaluation</li>
 <li>
-<code><a href="../reference/tool_data_profile.html">data_profile_tool()</a></code> – Dataset profiling and summary statistics</li>
+<code>data_profile_tool()</code> – Dataset profiling and summary statistics</li>
 <li>
-<code><a href="../reference/tool_r_help.html">r_help_tool()</a></code> – R documentation lookup with package restrictions</li>
+<code>r_help_tool()</code> – R documentation lookup with package restrictions</li>
 </ul></li>
 <li>Internal validation utilities for path safety, SQL identifiers, and rate limiting</li>
 <li>Comprehensive test suite covering security rejection paths</li>

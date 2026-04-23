@@ -14,8 +14,6 @@ tool_read_file(
   max_rows = 10000,
   max_calls = NULL
 )
-
-read_file_tool(...)
 ```
 
 ## Arguments
@@ -36,10 +34,6 @@ read_file_tool(...)
 - max_calls:
 
   Maximum invocations. `NULL` means unlimited.
-
-- ...:
-
-  Arguments passed to `tool_read_file()`.
 
 ## Value
 

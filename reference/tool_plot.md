@@ -15,8 +15,6 @@ tool_plot(
   max_calls = NULL,
   default_dpi = 150
 )
-
-plot_tool(...)
 ```
 
 ## Arguments
@@ -45,10 +43,6 @@ plot_tool(...)
 
   Default resolution in dots per inch for raster formats (png, jpg).
   Default 150.
-
-- ...:
-
-  Arguments passed to `tool_plot()`.
 
 ## Value
 
@@ -107,7 +101,7 @@ plt@fn(
   plot_code = "plot(1:10, (1:10)^2, main = 'Example')"
 )
 #> $path
-#> [1] "/tmp/RtmppFJvCp/scatter.png"
+#> [1] "/tmp/RtmpgVTReK/scatter.png"
 #> 
 #> $size
 #> [1] 27235

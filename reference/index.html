@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">securetools</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,14 +45,14 @@
 
       <dl><dt>
 
-          <code><a href="tool_read_file.html">tool_read_file()</a></code> <code><a href="tool_read_file.html">read_file_tool()</a></code>
+          <code><a href="tool_read_file.html">tool_read_file()</a></code>
 
         </dt>
         <dd>Create a file reading tool</dd>
 
         <dt>
 
-          <code><a href="tool_write_file.html">tool_write_file()</a></code> <code><a href="tool_write_file.html">write_file_tool()</a></code>
+          <code><a href="tool_write_file.html">tool_write_file()</a></code>
 
         </dt>
         <dd>Create a file writing tool</dd>
@@ -68,7 +68,7 @@
 
       <dl><dt>
 
-          <code><a href="tool_query_sql.html">tool_query_sql()</a></code> <code><a href="tool_query_sql.html">query_sql_tool()</a></code>
+          <code><a href="tool_query_sql.html">tool_query_sql()</a></code>
 
         </dt>
         <dd>Create a SQL query tool</dd>
@@ -84,21 +84,21 @@
 
       <dl><dt>
 
-          <code><a href="tool_data_profile.html">tool_data_profile()</a></code> <code><a href="tool_data_profile.html">data_profile_tool()</a></code>
+          <code><a href="tool_data_profile.html">tool_data_profile()</a></code>
 
         </dt>
         <dd>Create a data profiling tool</dd>
 
         <dt>
 
-          <code><a href="tool_calculator.html">tool_calculator()</a></code> <code><a href="tool_calculator.html">calculator_tool()</a></code>
+          <code><a href="tool_calculator.html">tool_calculator()</a></code>
 
         </dt>
         <dd>Create a calculator tool</dd>
 
         <dt>
 
-          <code><a href="tool_plot.html">tool_plot()</a></code> <code><a href="tool_plot.html">plot_tool()</a></code>
+          <code><a href="tool_plot.html">tool_plot()</a></code>
 
         </dt>
         <dd>Create a plot rendering tool</dd>
@@ -114,7 +114,7 @@
 
       <dl><dt>
 
-          <code><a href="tool_fetch_url.html">tool_fetch_url()</a></code> <code><a href="tool_fetch_url.html">fetch_url_tool()</a></code>
+          <code><a href="tool_fetch_url.html">tool_fetch_url()</a></code>
 
         </dt>
         <dd>Create a URL fetch tool</dd>
@@ -130,10 +130,33 @@
 
       <dl><dt>
 
-          <code><a href="tool_r_help.html">tool_r_help()</a></code> <code><a href="tool_r_help.html">r_help_tool()</a></code>
+          <code><a href="tool_r_help.html">tool_r_help()</a></code>
 
         </dt>
         <dd>Create an R help documentation tool</dd>
+      </dl></div><div class="section level2">
+      <h2 id="guardrail-composition">Guardrail Composition<a class="anchor" aria-label="anchor" href="#guardrail-composition"></a></h2>
+
+      <div class="section-desc"><p>Wrap tools with secureguard guardrails on input and output.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="guarded_tool.html">guarded_tool()</a></code>
+
+        </dt>
+        <dd>Wrap a securer_tool with input and output guardrails</dd>
+
+        <dt>
+
+          <code><a href="with_guards.html">with_guards()</a></code>
+
+        </dt>
+        <dd>Pipe-friendly alias for <code><a href="../reference/guarded_tool.html">guarded_tool()</a></code></dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -8,8 +8,6 @@ that evaluates mathematical expressions safely via AST validation.
 
 ``` r
 tool_calculator(max_calls = NULL)
-
-calculator_tool(...)
 ```
 
 ## Arguments
@@ -18,10 +16,6 @@ calculator_tool(...)
 
   Maximum number of invocations allowed. `NULL` (default) means
   unlimited.
-
-- ...:
-
-  Arguments passed to `tool_calculator()`.
 
 ## Value
 

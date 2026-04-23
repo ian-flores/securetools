@@ -13,8 +13,6 @@ tool_r_help(
   max_lines = 100,
   max_calls = NULL
 )
-
-r_help_tool(...)
 ```
 
 ## Arguments
@@ -31,10 +29,6 @@ r_help_tool(...)
 - max_calls:
 
   Maximum invocations. `NULL` means unlimited.
-
-- ...:
-
-  Arguments passed to `tool_r_help()`.
 
 ## Value
 

@@ -15,8 +15,6 @@ tool_fetch_url(
   max_calls = NULL,
   max_calls_per_minute = 10
 )
-
-fetch_url_tool(...)
 ```
 
 ## Arguments
@@ -42,10 +40,6 @@ fetch_url_tool(...)
 - max_calls_per_minute:
 
   Maximum invocations per 60-second window. Default 10.
-
-- ...:
-
-  Arguments passed to `tool_fetch_url()`.
 
 ## Value
 

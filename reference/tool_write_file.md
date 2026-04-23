@@ -14,8 +14,6 @@ tool_write_file(
   max_calls = NULL,
   overwrite = FALSE
 )
-
-write_file_tool(...)
 ```
 
 ## Arguments
@@ -35,10 +33,6 @@ write_file_tool(...)
 - overwrite:
 
   Whether to allow overwriting existing files. Default `FALSE`.
-
-- ...:
-
-  Arguments passed to `tool_write_file()`.
 
 ## Value
 

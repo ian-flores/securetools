@@ -8,8 +8,6 @@ that computes summary statistics for a data frame.
 
 ``` r
 tool_data_profile(max_rows = 1e+05, max_calls = NULL)
-
-data_profile_tool(...)
 ```
 
 ## Arguments
@@ -22,10 +20,6 @@ data_profile_tool(...)
 - max_calls:
 
   Maximum invocations allowed. `NULL` (default) means unlimited.
-
-- ...:
-
-  Arguments passed to `tool_data_profile()`.
 
 ## Value
 

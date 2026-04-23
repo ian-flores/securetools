@@ -10,8 +10,6 @@ structurally impossible.
 
 ``` r
 tool_query_sql(conn, allowed_tables, max_rows = 1000, max_calls = NULL)
-
-query_sql_tool(...)
 ```
 
 ## Arguments
@@ -31,10 +29,6 @@ query_sql_tool(...)
 - max_calls:
 
   Maximum invocations. `NULL` means unlimited.
-
-- ...:
-
-  Arguments passed to `tool_query_sql()`.
 
 ## Value
 
