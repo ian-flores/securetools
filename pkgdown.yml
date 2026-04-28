@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   agent-integration: agent-integration.html
   securetools: securetools.html
-last_built: 2026-04-28T07:58Z
+last_built: 2026-04-28T08:09Z
 urls:
   reference: https://ian-flores.github.io/securetools/reference
   article: https://ian-flores.github.io/securetools/articles
