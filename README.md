@@ -7,8 +7,7 @@
 [![pkgdown](https://github.com/ian-flores/securetools/actions/workflows/pkgdown.yaml/badge.svg)](https://ian-flores.github.io/securetools/)
 <!-- badges: end -->
 
-> [!NOTE]
-> Experimental release. APIs may change before the 1.0 stabilization; track the lifecycle badge above for the current tier.
+> **Note:** Experimental release. APIs may change before the 1.0 stabilization — track the lifecycle badge above for the current tier.
 
 Security-hardened tool definitions for R LLM agents. Pre-built
 [securer](https://github.com/ian-flores/securer) tool factories with
@@ -95,6 +94,33 @@ session$close()
 | URL Fetch | `tool_fetch_url()` | Domain allow-list, rate limiting |
 | Plot | `tool_plot()` | Path scoping, output size limits |
 | R Help | `tool_r_help()` | Package allow-list |
+
+## Composing with secureguard
+
+`guarded_tool()` wraps any `securer_tool` with input/output guardrails
+from [secureguard](https://github.com/ian-flores/secureguard). The
+returned object is itself a `securer_tool` (same schema, same IPC
+contract) whose closure runs each invocation through the guards before
+and after the underlying function. Guardrail failures surface as
+tool-call errors:
+
+```r
+library(securetools)
+library(secureguard)
+
+guarded <- guarded_tool(
+  tool_calculator(),
+  input_guards  = list(guard_prompt_injection()),
+  output_guards = list(guard_output_secrets(action = "block"))
+)
+
+# `with_guards()` is the pipe-friendly alias.
+guarded <- tool_calculator() |>
+  with_guards(input_guards = list(guard_prompt_injection()))
+```
+
+secureguard is a soft dependency (Suggests); calling `guarded_tool()`
+without secureguard installed errors with a clear install hint.
 
 ## Design Principles
 
