@@ -28,6 +28,7 @@ For orchestr fundamentals, see
 ## Setup
 
 ``` r
+
 library(securetools)
 library(orchestr)
 library(ellmer)
@@ -86,6 +87,7 @@ constructor with `secure = TRUE` so tool calls run inside a securer
 sandbox.
 
 ``` r
+
 # Create security-scoped tools
 calc <- tool_calculator()
 reader <- tool_read_file(allowed_dirs = "/path/to/project/data")
@@ -152,6 +154,7 @@ A supervisor graph routes tasks to specialized worker agents, each
 carrying its own set of tools.
 
 ``` r
+
 # Data agent: calculation and profiling
 data_agent <- agent(
   "data_specialist",
@@ -240,6 +243,7 @@ adjust its strategy. It might summarize what it has so far instead of
 fetching more data.
 
 ``` r
+
 # Cap the calculator at 50 calls per agent session
 calc <- tool_calculator(max_calls = 50)
 
@@ -274,6 +278,7 @@ definitions in the same agent. All tools run inside the same secure
 session and share the same sandbox isolation.
 
 ``` r
+
 # A custom tool alongside securetools
 timestamp_tool <- securer::securer_tool(
   name = "timestamp",

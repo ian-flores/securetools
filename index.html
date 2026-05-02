@@ -54,7 +54,7 @@
 <!-- badges: start -->
 
 <blockquote>
-<p>[!NOTE] Experimental release. APIs may change before the 1.0 stabilization; track the lifecycle badge above for the current tier.</p>
+<p><strong>Note:</strong> Experimental release. APIs may change before the 1.0 stabilization — track the lifecycle badge above for the current tier.</p>
 </blockquote>
 <p>Security-hardened tool definitions for R LLM agents. Pre-built <a href="https://github.com/ian-flores/securer" class="external-link">securer</a> tool factories with path scoping, parameterized SQL, domain allow-lists, size limits, and rate limiting.</p>
 <div class="section level2">
@@ -89,36 +89,36 @@
 <col width="60%">
 <col width="40%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Package</th>
 <th>Role</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><a href="https://github.com/ian-flores/securer" class="external-link">securer</a></td>
 <td>Sandboxed R execution with tool-call IPC</td>
 </tr>
-<tr class="even">
+<tr>
 <td><a href="https://github.com/ian-flores/securetools" class="external-link">securetools</a></td>
 <td>Pre-built security-hardened tool definitions</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><a href="https://github.com/ian-flores/secureguard" class="external-link">secureguard</a></td>
 <td>Input/code/output guardrails (injection, PII, secrets)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><a href="https://github.com/ian-flores/orchestr" class="external-link">orchestr</a></td>
 <td>Graph-based agent orchestration</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><a href="https://github.com/ian-flores/securecontext" class="external-link">securecontext</a></td>
 <td>Document chunking, embeddings, RAG retrieval</td>
 </tr>
-<tr class="even">
+<tr>
 <td><a href="https://github.com/ian-flores/securetrace" class="external-link">securetrace</a></td>
 <td>Structured tracing, token/cost accounting, JSONL export</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><a href="https://github.com/ian-flores/securebench" class="external-link">securebench</a></td>
 <td>Guardrail benchmarking with precision/recall/F1 metrics</td>
 </tr>
@@ -159,54 +159,73 @@
 <col width="26%">
 <col width="55%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Tool</th>
 <th>Factory</th>
 <th>Security Features</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>Calculator</td>
 <td><code><a href="reference/tool_calculator.html">tool_calculator()</a></code></td>
 <td>AST validation, no code injection</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Data Profile</td>
 <td><code><a href="reference/tool_data_profile.html">tool_data_profile()</a></code></td>
 <td>Row sampling for large data</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Read File</td>
 <td><code><a href="reference/tool_read_file.html">tool_read_file()</a></code></td>
 <td>Path scoping, size limits</td>
 </tr>
-<tr class="even">
+<tr>
 <td>Write File</td>
 <td><code><a href="reference/tool_write_file.html">tool_write_file()</a></code></td>
 <td>Path scoping, overwrite protection</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>SQL Query</td>
 <td><code><a href="reference/tool_query_sql.html">tool_query_sql()</a></code></td>
 <td>Table allow-list, parameterized queries</td>
 </tr>
-<tr class="even">
+<tr>
 <td>URL Fetch</td>
 <td><code><a href="reference/tool_fetch_url.html">tool_fetch_url()</a></code></td>
 <td>Domain allow-list, rate limiting</td>
 </tr>
-<tr class="odd">
+<tr>
 <td>Plot</td>
 <td><code><a href="reference/tool_plot.html">tool_plot()</a></code></td>
 <td>Path scoping, output size limits</td>
 </tr>
-<tr class="even">
+<tr>
 <td>R Help</td>
 <td><code><a href="reference/tool_r_help.html">tool_r_help()</a></code></td>
 <td>Package allow-list</td>
 </tr>
 </tbody>
 </table>
+</div>
+<div class="section level2">
+<h2 id="composing-with-secureguard">Composing with secureguard<a class="anchor" aria-label="anchor" href="#composing-with-secureguard"></a>
+</h2>
+<p><code><a href="reference/guarded_tool.html">guarded_tool()</a></code> wraps any <code>securer_tool</code> with input/output guardrails from <a href="https://github.com/ian-flores/secureguard" class="external-link">secureguard</a>. The returned object is itself a <code>securer_tool</code> (same schema, same IPC contract) whose closure runs each invocation through the guards before and after the underlying function. Guardrail failures surface as tool-call errors:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securetools/">securetools</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/secureguard/" class="external-link">secureguard</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">guarded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/guarded_tool.html">guarded_tool</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  input_guards  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_prompt_injection.html" class="external-link">guard_prompt_injection</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  output_guards <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_output_secrets.html" class="external-link">guard_output_secrets</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"block"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># `with_guards()` is the pipe-friendly alias.</span></span>
+<span><span class="va">guarded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="reference/with_guards.html">with_guards</a></span><span class="op">(</span>input_guards <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_prompt_injection.html" class="external-link">guard_prompt_injection</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>secureguard is a soft dependency (Suggests); calling <code><a href="reference/guarded_tool.html">guarded_tool()</a></code> without secureguard installed errors with a clear install hint.</p>
 </div>
 <div class="section level2">
 <h2 id="design-principles">Design Principles<a class="anchor" aria-label="anchor" href="#design-principles"></a>

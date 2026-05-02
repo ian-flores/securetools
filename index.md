@@ -1,7 +1,7 @@
 # securetools
 
-> \[!NOTE\] Experimental release. APIs may change before the 1.0
-> stabilization; track the lifecycle badge above for the current tier.
+> **Note:** Experimental release. APIs may change before the 1.0
+> stabilization — track the lifecycle badge above for the current tier.
 
 Security-hardened tool definitions for R LLM agents. Pre-built
 [securer](https://github.com/ian-flores/securer) tool factories with
@@ -44,19 +44,20 @@ plug directly into securer sessions. It sits in the middle layer
 alongside secureguard and securecontext, giving agents safe access to
 files, SQL, URLs, and computation.
 
-| Package                                                      | Role                                                    |
-|--------------------------------------------------------------|---------------------------------------------------------|
-| [securer](https://github.com/ian-flores/securer)             | Sandboxed R execution with tool-call IPC                |
-| [securetools](https://github.com/ian-flores/securetools)     | Pre-built security-hardened tool definitions            |
-| [secureguard](https://github.com/ian-flores/secureguard)     | Input/code/output guardrails (injection, PII, secrets)  |
-| [orchestr](https://github.com/ian-flores/orchestr)           | Graph-based agent orchestration                         |
-| [securecontext](https://github.com/ian-flores/securecontext) | Document chunking, embeddings, RAG retrieval            |
-| [securetrace](https://github.com/ian-flores/securetrace)     | Structured tracing, token/cost accounting, JSONL export |
-| [securebench](https://github.com/ian-flores/securebench)     | Guardrail benchmarking with precision/recall/F1 metrics |
+| Package | Role |
+|----|----|
+| [securer](https://github.com/ian-flores/securer) | Sandboxed R execution with tool-call IPC |
+| [securetools](https://github.com/ian-flores/securetools) | Pre-built security-hardened tool definitions |
+| [secureguard](https://github.com/ian-flores/secureguard) | Input/code/output guardrails (injection, PII, secrets) |
+| [orchestr](https://github.com/ian-flores/orchestr) | Graph-based agent orchestration |
+| [securecontext](https://github.com/ian-flores/securecontext) | Document chunking, embeddings, RAG retrieval |
+| [securetrace](https://github.com/ian-flores/securetrace) | Structured tracing, token/cost accounting, JSONL export |
+| [securebench](https://github.com/ian-flores/securebench) | Guardrail benchmarking with precision/recall/F1 metrics |
 
 ## Installation
 
 ``` r
+
 # install.packages("pak")
 pak::pak("ian-flores/securetools")
 ```
@@ -64,6 +65,7 @@ pak::pak("ian-flores/securetools")
 ## Quick Start
 
 ``` r
+
 library(securetools)
 library(securer)
 
@@ -81,16 +83,45 @@ session$close()
 
 ## Available Tools
 
-| Tool         | Factory                                                                                          | Security Features                       |
-|--------------|--------------------------------------------------------------------------------------------------|-----------------------------------------|
-| Calculator   | [`tool_calculator()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md)     | AST validation, no code injection       |
-| Data Profile | [`tool_data_profile()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md) | Row sampling for large data             |
-| Read File    | [`tool_read_file()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md)       | Path scoping, size limits               |
-| Write File   | [`tool_write_file()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md)     | Path scoping, overwrite protection      |
-| SQL Query    | [`tool_query_sql()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md)       | Table allow-list, parameterized queries |
-| URL Fetch    | [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)       | Domain allow-list, rate limiting        |
-| Plot         | [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)                 | Path scoping, output size limits        |
-| R Help       | [`tool_r_help()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md)             | Package allow-list                      |
+| Tool | Factory | Security Features |
+|----|----|----|
+| Calculator | [`tool_calculator()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md) | AST validation, no code injection |
+| Data Profile | [`tool_data_profile()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md) | Row sampling for large data |
+| Read File | [`tool_read_file()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md) | Path scoping, size limits |
+| Write File | [`tool_write_file()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md) | Path scoping, overwrite protection |
+| SQL Query | [`tool_query_sql()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md) | Table allow-list, parameterized queries |
+| URL Fetch | [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md) | Domain allow-list, rate limiting |
+| Plot | [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md) | Path scoping, output size limits |
+| R Help | [`tool_r_help()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md) | Package allow-list |
+
+## Composing with secureguard
+
+[`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
+wraps any `securer_tool` with input/output guardrails from
+[secureguard](https://github.com/ian-flores/secureguard). The returned
+object is itself a `securer_tool` (same schema, same IPC contract) whose
+closure runs each invocation through the guards before and after the
+underlying function. Guardrail failures surface as tool-call errors:
+
+``` r
+
+library(securetools)
+library(secureguard)
+
+guarded <- guarded_tool(
+  tool_calculator(),
+  input_guards  = list(guard_prompt_injection()),
+  output_guards = list(guard_output_secrets(action = "block"))
+)
+
+# `with_guards()` is the pipe-friendly alias.
+guarded <- tool_calculator() |>
+  with_guards(input_guards = list(guard_prompt_injection()))
+```
+
+secureguard is a soft dependency (Suggests); calling
+[`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
+without secureguard installed errors with a clear install hint.
 
 ## Design Principles
 
