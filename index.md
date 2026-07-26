@@ -16,32 +16,29 @@ security-hardened tool wrappers that enforce sandboxing, path
 restrictions, and query validation – so you can give AI agents real
 capabilities without giving them the keys to the kingdom.
 
-## Part of the secure-r-dev Ecosystem
+## Part of the secure-r-dev Packages
 
-securetools is part of a 7-package ecosystem for building governed AI
-agents in R:
+securetools is one of four packages for building governed AI agents in
+R:
 
-                        ┌─────────────┐
-                        │   securer    │
-                        └──────┬──────┘
-              ┌────────────────┼─────────────────┐
-              │                │                  │
-      ┌───────▼────────┐  ┌───▼──────────┐  ┌───▼──────────────┐
-      │>>> securetools<<<│  │ secureguard  │  │  securecontext   │
-      └───────┬────────┘  └───┬──────────┘  └───┬──────────────┘
-              └────────────────┼─────────────────┘
-                        ┌──────▼───────┐
-                        │   orchestr   │
-                        └──────┬───────┘
-              ┌────────────────┼─────────────────┐
-              │                                  │
-       ┌──────▼──────┐                    ┌──────▼──────┐
-       │ securetrace  │                   │ securebench  │
-       └─────────────┘                    └─────────────┘
+                     ┌─────────────┐
+                     │   securer    │  Sandboxed execution + tool-call IPC
+                     └──────┬───────┘
+                ┌───────────┴───────────┐
+                │                       │
+        ┌───────▼────────┐       ┌──────▼───────┐
+        │>>> securetools<<<│◄──────┤ secureguard  │
+        └────────────────┘ guards └──────┬───────┘
+                                         │
+                                  ┌──────▼───────┐
+                                  │ securebench  │  (evaluation)
+                                  └──────────────┘
 
-securetools provides pre-built, security-hardened tool definitions that
-plug directly into securer sessions. It sits in the middle layer
-alongside secureguard and securecontext, giving agents safe access to
+securetools composes securer and secureguard: it provides pre-built,
+security-hardened tool definitions that plug directly into securer
+sessions, and (via
+[`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md))
+wraps them with secureguard guardrails, giving agents safe access to
 files, SQL, URLs, and computation.
 
 | Package | Role |
@@ -49,10 +46,15 @@ files, SQL, URLs, and computation.
 | [securer](https://github.com/ian-flores/securer) | Sandboxed R execution with tool-call IPC |
 | [securetools](https://github.com/ian-flores/securetools) | Pre-built security-hardened tool definitions |
 | [secureguard](https://github.com/ian-flores/secureguard) | Input/code/output guardrails (injection, PII, secrets) |
-| [orchestr](https://github.com/ian-flores/orchestr) | Graph-based agent orchestration |
-| [securecontext](https://github.com/ian-flores/securecontext) | Document chunking, embeddings, RAG retrieval |
-| [securetrace](https://github.com/ian-flores/securetrace) | Structured tracing, token/cost accounting, JSONL export |
 | [securebench](https://github.com/ian-flores/securebench) | Guardrail benchmarking with precision/recall/F1 metrics |
+
+Observability is built on OpenTelemetry: securetools emits optional
+tool-call spans via the [otel](https://otel.r-lib.org/) package, use
+[ellmer](https://ellmer.tidyverse.org/)’s native OpenTelemetry support
+to trace the LLM side of your agent, and
+[ragnar](https://ragnar.tidyverse.org/) for retrieval-augmented context.
+For graph-based agent orchestration on top of these packages, see
+[orchestr](https://github.com/ian-flores/orchestr).
 
 ## Installation
 
@@ -143,6 +145,12 @@ without secureguard installed errors with a clear install hint.
   with securer sessions
 - [`vignette("agent-integration")`](https://ian-flores.github.io/securetools/articles/agent-integration.md)
   – End-to-end examples wiring securetools into LLM agent workflows
+- [`vignette("data-analyst-agent")`](https://ian-flores.github.io/securetools/articles/data-analyst-agent.md)
+  – Building a governed data analyst agent with securer + secureguard +
+  securetools
+- `system.file("examples", package = "securetools")` – Runnable
+  examples, including a Plumber REST API with guarded chat and sandboxed
+  execution
 - [pkgdown site](https://ian-flores.github.io/securetools/) – Full API
   reference and rendered vignettes
 

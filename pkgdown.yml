@@ -1,10 +1,11 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   agent-integration: agent-integration.html
+  data-analyst-agent: data-analyst-agent.html
   securetools: securetools.html
-last_built: 2026-05-02T19:25Z
+last_built: 2026-07-26T21:30Z
 urls:
   reference: https://ian-flores.github.io/securetools/reference
   article: https://ian-flores.github.io/securetools/articles

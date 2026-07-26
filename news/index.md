@@ -1,5 +1,32 @@
 # Changelog
 
+## securetools (development version)
+
+### Ecosystem consolidation
+
+- Absorbed content from the retired `secure-r-dev-ecosystem` and
+  `secureverse` repositories as the ecosystem slims to four packages
+  (securer, secureguard, securetools, securebench):
+  - New vignette
+    [`vignette("data-analyst-agent")`](https://ian-flores.github.io/securetools/articles/data-analyst-agent.md)
+    — the flagship “Building a Data Analyst Agent” walkthrough, pruned
+    to the securer + secureguard + securetools chain. Tracing sections
+    were dropped in favour of ellmer’s native OpenTelemetry support.
+  - New cross-package integration tests
+    (`tests/testthat/test-integration-ecosystem.R`); they skip when
+    securer/secureguard are not installed and never run on CRAN.
+  - New runnable Plumber API example under `inst/examples/plumber/`
+    demonstrating guarded chat and sandboxed tool execution.
+  - CRAN release checklist and `build-cran-tarball.R` helper ported from
+    secureverse into `.github/`.
+- README updated for the 4-package lineup; references to the archived
+  securetrace/securecontext packages and the umbrella repo removed.
+- Tracing ported from the archived `securetrace` package to
+  OpenTelemetry via the CRAN `otel` package (soft dependency in
+  Suggests). Tool spans keep their `tool.*` names and are emitted under
+  the `com.github.ian-flores.securetools` tracer; tools behave
+  identically when `otel` is not installed or tracing is disabled.
+
 ## securetools 0.2.0
 
 ### Breaking changes
