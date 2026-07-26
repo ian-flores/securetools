@@ -83,7 +83,7 @@ tool_r_help <- function(allowed_packages = c("base", "stats", "utils",
       }
 
       if (.trace_active()) {
-        securetrace::with_span("tool.r_help", type = "tool", {
+        .with_span("tool.r_help", {
           result <- .do_help()
           .span_event("tool.result", list(tool = "r_help"))
           result

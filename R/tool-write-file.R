@@ -136,7 +136,7 @@ tool_write_file <- function(allowed_dirs, max_file_size = "10MB",
       }
 
       if (.trace_active()) {
-        securetrace::with_span("tool.write_file", type = "tool", {
+        .with_span("tool.write_file", {
           result <- .do_write()
           .span_event("tool.result", list(tool = "write_file"))
           result

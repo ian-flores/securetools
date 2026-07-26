@@ -17,3 +17,7 @@
 #' @importFrom utils getFromNamespace
 ## usethis namespace: end
 NULL
+
+# Tracer name used for OpenTelemetry spans (see R/utils-trace.R).
+# Not exported.
+otel_tracer_name <- "com.github.ian-flores.securetools"

@@ -153,7 +153,7 @@ tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
       }
 
       if (.trace_active()) {
-        securetrace::with_span("tool.fetch_url", type = "tool", {
+        .with_span("tool.fetch_url", {
           result <- .do_fetch()
           .span_event("tool.result", list(tool = "fetch_url"))
           result

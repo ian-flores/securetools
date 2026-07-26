@@ -118,7 +118,7 @@ tool_data_profile <- function(max_rows = 100000, max_calls = NULL) {
       }
 
       if (.trace_active()) {
-        securetrace::with_span("tool.data_profile", type = "tool", {
+        .with_span("tool.data_profile", {
           result <- .do_profile()
           .span_event("tool.result", list(tool = "data_profile"))
           result

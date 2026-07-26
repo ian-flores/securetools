@@ -78,7 +78,7 @@ tool_read_file <- function(allowed_dirs, max_file_size = "50MB", max_rows = 1000
       }
 
       if (.trace_active()) {
-        securetrace::with_span("tool.read_file", type = "tool", {
+        .with_span("tool.read_file", {
           result <- .do_read()
           .span_event("tool.result", list(tool = "read_file"))
           result

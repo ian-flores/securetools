@@ -143,7 +143,7 @@ tool_calculator <- function(max_calls = NULL) {
       }
 
       if (.trace_active()) {
-        securetrace::with_span("tool.calculator", type = "tool", {
+        .with_span("tool.calculator", {
           result <- .do_calc()
           .span_event("tool.result", list(tool = "calculator"))
           result

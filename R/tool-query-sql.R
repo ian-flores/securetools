@@ -110,7 +110,7 @@ tool_query_sql <- function(conn, allowed_tables, max_rows = 1000,
       }
 
       if (.trace_active()) {
-        securetrace::with_span("tool.query_sql", type = "tool", {
+        .with_span("tool.query_sql", {
           result <- .do_query()
           .span_event("tool.result", list(tool = "query_sql"))
           result

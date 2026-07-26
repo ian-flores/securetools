@@ -252,7 +252,7 @@ tool_plot <- function(allowed_dirs, default_width = 8, default_height = 6,
       }
 
       if (.trace_active()) {
-        securetrace::with_span("tool.plot", type = "tool", {
+        .with_span("tool.plot", {
           result <- .do_plot()
           .span_event("tool.result", list(tool = "plot"))
           result
