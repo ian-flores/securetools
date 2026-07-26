@@ -44,7 +44,13 @@ test_that("session runs calculator and file tools end-to-end", {
   # Note: tool_write_file()'s content arg is typed as "list" because IPC
   # serialization converts R objects to lists via JSON. Wrapping in list()
   # satisfies the type check on the parent side.
-  test_file <- file.path(tmp_dir, "integration_test.txt")
+  # Forward slashes: this path is interpolated into R code below, and
+  # backslashes in a Windows temp path would be parsed as escape sequences.
+  test_file <- normalizePath(
+    file.path(tmp_dir, "integration_test.txt"),
+    winslash = "/",
+    mustWork = FALSE
+  )
 
   session$execute(sprintf(
     'write_file(path = "%s", content = list("hello from securetools"), format = "txt")',
