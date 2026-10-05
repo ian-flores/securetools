@@ -10,17 +10,23 @@ document describes the submission flow.
 
 ## Submission order
 
-CRAN accepts a package only if all its dependencies are already
-available. Submit in this order, waiting for each to land before the
-next:
+CRAN accepts a package only if all its hard dependencies (`Imports`,
+`Depends`) are already available. Only `securetools` has a hard
+dependency inside the family, so submit in this order:
 
-1. `securer`
-2. `secureguard` (depends on securer)
-3. `securetools` (depends on securer; soft on secureguard)
-4. `securebench` (soft on secureguard)
+1. `secureguard` (no hard deps in the family; soft on securer)
+2. `securebench` (no hard deps in the family; soft on secureguard)
+3. `securer`
+4. `securetools` (depends on securer; soft on secureguard)
+
+secureguard and securebench lead because they have no equivalent in
+Posit's stack: commons (2026-09) ships its own internal sandbox but no
+injection/PII/secret guardrails, and vitals ships no security
+benchmarks.
 
 Soft = `Suggests`. Submission can technically proceed before Suggests
-land, but vignettes that exercise the soft dep won't build cleanly.
+land, but tests and vignettes that exercise the soft dep must skip or
+degrade gracefully (`skip_if_not_installed()`, `eval = FALSE`).
 
 Note: `securetools` emits optional OpenTelemetry spans via the CRAN
 `otel` package (with `otelsdk` used only in tests) and carries a soft
