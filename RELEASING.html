@@ -40,15 +40,16 @@
 <p>(Ported from the retired <code>secureverse</code> umbrella repo, <code>inst/release/RELEASING.md</code>, and updated for the 4-package lineup.)</p>
 <div class="section level2">
 <h2 id="submission-order">Submission order<a class="anchor" aria-label="anchor" href="#submission-order"></a></h2>
-<p>CRAN accepts a package only if all its dependencies are already available. Submit in this order, waiting for each to land before the next:</p>
-<ol style="list-style-type: decimal"><li><code>securer</code></li>
+<p>CRAN accepts a package only if all its hard dependencies (<code>Imports</code>, <code>Depends</code>) are already available. Only <code>securetools</code> has a hard dependency inside the family, so submit in this order:</p>
+<ol style="list-style-type: decimal"><li>
+<code>secureguard</code> (no hard deps in the family; soft on securer)</li>
 <li>
-<code>secureguard</code> (depends on securer)</li>
+<code>securebench</code> (no hard deps in the family; soft on secureguard)</li>
+<li><code>securer</code></li>
 <li>
 <code>securetools</code> (depends on securer; soft on secureguard)</li>
-<li>
-<code>securebench</code> (soft on secureguard)</li>
-</ol><p>Soft = <code>Suggests</code>. Submission can technically proceed before Suggests land, but vignettes that exercise the soft dep won’t build cleanly.</p>
+</ol><p>secureguard and securebench lead because they have no equivalent in Posit’s stack: commons (2026-09) ships its own internal sandbox but no injection/PII/secret guardrails, and vitals ships no security benchmarks.</p>
+<p>Soft = <code>Suggests</code>. Submission can technically proceed before Suggests land, but tests and vignettes that exercise the soft dep must skip or degrade gracefully (<code>skip_if_not_installed()</code>, <code>eval = FALSE</code>).</p>
 <p>Note: <code>securetools</code> emits optional OpenTelemetry spans via the CRAN <code>otel</code> package (with <code>otelsdk</code> used only in tests) and carries a soft reference to <code>orchestr</code> (agent-integration vignette). Neither blocks CRAN submission of <code>securetools</code> itself, but any Suggests package referenced from vignettes/tests must either be on CRAN or the usage must degrade gracefully (<code>skip_if_not_installed()</code>, <code>eval = FALSE</code> chunks).</p>
 </div>
 <div class="section level2">
