@@ -2,8 +2,7 @@
 
 Returns a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
-that fetches content from URLs via HTTP GET/HEAD with domain allow-lists
-and rate limiting.
+that makes GET and HEAD requests to the domains you allow.
 
 ## Usage
 
@@ -21,25 +20,25 @@ tool_fetch_url(
 
 - allowed_domains:
 
-  Character vector of allowed domains (required). Use `*.example.com`
-  for wildcard subdomains matching any subdomain but not the bare domain
-  itself.
+  Character vector of domains the tool may contact. Required.
+  `*.example.com` matches any subdomain of `example.com` but not
+  `example.com` itself.
 
 - max_response_size:
 
-  Maximum response body size. Default `"1MB"`.
+  The largest response body the tool will return. Default `"1MB"`.
 
 - timeout_secs:
 
-  Request timeout in seconds. Default 30.
+  How long to wait for a response, in seconds. Default 30.
 
 - max_calls:
 
-  Maximum lifetime invocations. `NULL` means unlimited.
+  The most times the tool can be called in total. `NULL` means no limit.
 
 - max_calls_per_minute:
 
-  Maximum invocations per 60-second window. Default 10.
+  The most calls allowed in any 60 seconds. Default 10.
 
 ## Value
 
@@ -47,29 +46,21 @@ A `securer_tool` object.
 
 ## Details
 
-The tool enforces several layers of security:
+Only `http` and `https` URLs are accepted, and only GET and HEAD. The
+host must match `allowed_domains`. For example, `*.example.com` matches
+`api.example.com` and `deep.sub.example.com`, but not `example.com`.
 
-- **Protocol restriction**: Only `http` and `https` schemes are
-  accepted. Other protocols (e.g. `file://`, `ftp://`) are rejected.
+The tool looks up the host's IP address once and refuses private and
+reserved addresses (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x, and
+0.0.0.0) as well as every IPv6 address. It then connects to that IP
+directly, with the original host name in the `Host` header, so a second
+DNS lookup can't point it somewhere else. Redirects are not followed.
 
-- **Private IP blocking**: Hostnames that resolve to private or reserved
-  IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x, 0.0.0.0)
-  are blocked to prevent SSRF attacks.
+curl stops the download at `max_response_size`, and the body size is
+checked again afterwards.
 
-- **No redirect following**: HTTP redirects are not followed, preventing
-  redirect-based SSRF bypasses.
-
-- **Domain allow-list**: Every request is checked against the
-  `allowed_domains` list. Wildcard entries like `*.example.com` match
-  any subdomain (e.g. `api.example.com`, `deep.sub.example.com`) but not
-  the bare `example.com`.
-
-- **Curl-level size limit**: A `maxfilesize` curl option caps the
-  download at `max_response_size` bytes, with an additional
-  post-download `nchar` check as a backup.
-
-- **Rate limiting**: Both per-minute and lifetime invocation limits are
-  enforced.
+HTTPS requests currently fail: because the tool connects by IP address,
+the server's TLS certificate doesn't match and curl rejects it.
 
 ## See also
 

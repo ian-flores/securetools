@@ -2,7 +2,7 @@
 
 Returns a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
-that computes summary statistics for a data frame.
+that summarizes a data frame.
 
 ## Usage
 
@@ -14,12 +14,13 @@ tool_data_profile(max_rows = 1e+05, max_calls = NULL)
 
 - max_rows:
 
-  Maximum rows to profile. Larger data frames are sampled. Default
+  The most rows to profile. Larger data frames are sampled. Default
   100000.
 
 - max_calls:
 
-  Maximum invocations allowed. `NULL` (default) means unlimited.
+  The most times the tool can be called. `NULL` (the default) means no
+  limit.
 
 ## Value
 
@@ -27,18 +28,19 @@ A `securer_tool` object.
 
 ## Details
 
-Computes per-column statistics including type, missing count, and unique
-count. For numeric and integer columns, also computes min, max, mean,
-median, and standard deviation. For character and factor columns,
-returns the top 5 most frequent values with counts.
+For every column the tool reports the type, the number of missing
+values, and the number of distinct values. Numeric columns also get the
+minimum, maximum, mean, median, and standard deviation. Character and
+factor columns get their five most common values with counts.
 
-When the input data frame exceeds `max_rows`, a random sample of
-`max_rows` rows is profiled and the result indicates that sampling
-occurred.
+If the data frame has more than `max_rows` rows, the tool profiles a
+random sample of `max_rows` rows and sets `sampled = TRUE` in the
+result.
 
-The `data` argument is declared as type `"list"` in the tool schema
-because the IPC serialization layer converts data frames to lists. The
-tool automatically coerces list input back to a data frame.
+The `data` argument is declared as `"list"` in the tool schema, because
+data frames sent between processes as JSON arrive as lists. The tool
+turns the list back into a data frame. Inside a `SecureSession`, this
+currently fails for data frames the size of `iris`; small ones work.
 
 ## See also
 

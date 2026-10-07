@@ -2,12 +2,12 @@
 
 ### Getting Started
 
-- [Getting Started with
+- [Getting started with
   securetools](https://ian-flores.github.io/securetools/articles/securetools.md):
 
 ### Integration
 
 - [Using securetools with
-  Agents](https://ian-flores.github.io/securetools/articles/agent-integration.md):
-- [Building a Data Analyst
-  Agent](https://ian-flores.github.io/securetools/articles/data-analyst-agent.md):
+  agents](https://ian-flores.github.io/securetools/articles/agent-integration.md):
+- [Building a data analyst
+  agent](https://ian-flores.github.io/securetools/articles/data-analyst-agent.md):

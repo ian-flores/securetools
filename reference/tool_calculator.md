@@ -2,7 +2,8 @@
 
 Returns a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
-that evaluates mathematical expressions safely via AST validation.
+that evaluates a math expression. Anything other than arithmetic and a
+short list of math functions is rejected before it runs.
 
 ## Usage
 
@@ -14,8 +15,8 @@ tool_calculator(max_calls = NULL)
 
 - max_calls:
 
-  Maximum number of invocations allowed. `NULL` (default) means
-  unlimited.
+  The most times the tool can be called. `NULL` (the default) means no
+  limit.
 
 ## Value
 
@@ -23,25 +24,25 @@ A `securer_tool` object.
 
 ## Details
 
-The calculator tool evaluates mathematical expressions in a restricted
-environment. Only the following functions and operators are allowed:
+These are the only functions and operators the calculator accepts:
 
-- **Arithmetic**: `+`, `-`, `*`, `/`, `^`, `%%`, `%/%`
+- arithmetic: `+`, `-`, `*`, `/`, `^`, `%%`, `%/%`
 
-- **Math**: `sqrt`, `abs`, `log`, `log2`, `log10`, `exp`, `ceiling`,
+- math: `sqrt`, `abs`, `log`, `log2`, `log10`, `exp`, `ceiling`,
   `floor`, `round`, `trunc`
 
-- **Trigonometry**: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`
+- trigonometry: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`
 
-- **Aggregation**: `sum`, `mean`, `max`, `min`, `length`
+- summaries: `sum`, `mean`, `max`, `min`, `length`
 
-- **Utilities**: `c`, `pi`
+- `c` and `pi`
 
-Expressions are first parsed and validated via an AST walk that rejects
-any function call or symbol not on the allowlist. Evaluation then occurs
-in a minimal environment containing only the allowed functions, with
-[`emptyenv()`](https://rdrr.io/r/base/environment.html) as its parent to
-prevent access to other R functionality.
+The expression must be a single expression. It is parsed, and every
+function call and name in the parse tree is checked against the list
+above before anything is evaluated. It is then evaluated in an
+environment that holds only those functions and has
+[`emptyenv()`](https://rdrr.io/r/base/environment.html) as its parent,
+so nothing else in R is reachable.
 
 ## See also
 

@@ -2,8 +2,8 @@
 
 Returns a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
-that writes data to files in specified directories with size limits and
-overwrite protection.
+that writes files into the folders you allow, up to a size limit,
+without overwriting existing files unless you say so.
 
 ## Usage
 
@@ -20,19 +20,20 @@ tool_write_file(
 
 - allowed_dirs:
 
-  Character vector of directories the tool can write to.
+  Character vector of folders the tool can write to.
 
 - max_file_size:
 
-  Max output file size. Default `"10MB"`.
+  The largest file the tool will write. Default `"10MB"`.
 
 - max_calls:
 
-  Maximum invocations. `NULL` means unlimited.
+  The most times the tool can be called. `NULL` means no limit.
 
 - overwrite:
 
-  Whether to allow overwriting existing files. Default `FALSE`.
+  Whether the tool may replace a file that already exists. Default
+  `FALSE`.
 
 ## Value
 
@@ -40,33 +41,22 @@ A `securer_tool` object.
 
 ## Details
 
-The `content` argument type is declared as `"list"` in the tool schema
-because the IPC serialization layer (JSON) converts most R objects to
-lists. In practice, callers should pass:
+The tool writes csv, json, txt, and rds files. It picks the format from
+the file extension unless the caller passes `format`.
 
-- A `data.frame` for CSV and JSON formats
+The `content` argument is declared as `"list"` in the tool schema,
+because arguments are sent between processes as JSON and most R objects
+arrive as lists. Pass a data frame for csv and json, a character vector
+for txt, and any R object for rds.
 
-- A character vector for TXT format
-
-- Any R object for RDS format
-
-Supported formats: csv, json, txt, rds. Format is auto-detected from the
-file extension, or can be specified explicitly.
-
-Security constraints:
-
-- **Atomic writes**: Data is written to a temp file first, validated for
-  size, then moved to the target path.
-
-- **Overwrite protection**: By default, existing files cannot be
-  overwritten (controlled by the `overwrite` parameter).
-
-- **Symlink resolution**: Target paths are resolved via
-  [`base::normalizePath()`](https://rdrr.io/r/base/normalizePath.html)
-  to prevent symlink-based directory escapes.
-
-- **Size limits**: Written files exceeding `max_file_size` are rejected
-  before being moved to the target.
+The target's parent folder is resolved with
+[`base::normalizePath()`](https://rdrr.io/r/base/normalizePath.html),
+which follows symlinks, and must be inside one of `allowed_dirs`. The
+data is written to a temporary file in the same folder first. If that
+file is larger than `max_file_size`, nothing is written to the target.
+Otherwise it is copied to the target, and the target's path is checked
+again. If it now resolves outside `allowed_dirs`, the file is deleted
+and the call fails.
 
 ## See also
 

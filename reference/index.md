@@ -46,10 +46,6 @@ R help documentation lookup.
 Wrap tools with secureguard guardrails on input and output.
 
 - [`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
-  : Wrap a securer_tool with input and output guardrails
-
+  : Add secureguard checks to a tool
 - [`with_guards()`](https://ian-flores.github.io/securetools/reference/with_guards.md)
-  :
-
-  Pipe-friendly alias for
-  [`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
+  : Add secureguard checks to a tool, in a pipe

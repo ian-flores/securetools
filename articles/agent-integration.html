@@ -5,12 +5,16 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Using securetools with Agents • securetools</title>
+<title>Using securetools with agents • securetools</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Hanken_Grotesk-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/Space_Mono-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/Fraunces-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Using securetools with Agents">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Using securetools with agents">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -52,7 +56,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Using securetools with Agents</h1>
+      <h1>Using securetools with agents</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/ian-flores/securetools/blob/main/vignettes/agent-integration.Rmd" class="external-link"><code>vignettes/agent-integration.Rmd</code></a></small>
@@ -64,23 +68,22 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>An AI agent that reads files, queries databases, and calls APIs
-combines an LLM’s reasoning with executable tools. Because that
-reasoning is probabilistic and shaped by its inputs, any tool the LLM
-can call might be called in unexpected or adversarial ways. Agent
-frameworks must treat tool access as a security boundary.</p>
-<p>securetools provides pre-built, security-hardened tools that plug
-directly into <a href="https://github.com/ian-flores/orchestr" class="external-link">orchestr</a> agents. Each
-tool factory returns a <code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> object that
-orchestr’s <code>Agent</code> class converts to an ellmer tool
-automatically when <code>secure = TRUE</code>. You get structural
-security guarantees (path scoping, parameterized SQL, rate limiting)
-without writing any security code yourself. The tools enforce
-constraints by design.</p>
-<p>The examples below wire securetools into single-agent ReAct loops,
-multi-agent supervisor graphs, and mixed toolkits. For tool factory
-basics, see <code><a href="../articles/securetools.html">vignette("securetools")</a></code>. For orchestr
-fundamentals, see
+<p>An agent decides for itself when to call a tool and with what
+arguments. Its choices depend on everything it has read, including text
+an attacker may have planted. So any tool you give it can end up being
+called in ways you didn’t plan for, and the tool itself has to enforce
+the limits.</p>
+<p>This vignette shows securetools inside <a href="https://github.com/ian-flores/orchestr" class="external-link">orchestr</a> agents. Each
+<code>tool_*()</code> function returns a
+<code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code>, and orchestr’s
+<code><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent()</a></code> turns it into an ellmer tool when you set
+<code>secure = TRUE</code>. The limits (allowed folders, allowed tables,
+call caps) come with the tool, so you don’t write any checking code
+yourself.</p>
+<p>The examples cover a single agent in a ReAct loop, a supervisor with
+specialist workers, call limits, and custom tools next to the built-in
+ones. For the tools themselves, see
+<code><a href="../articles/securetools.html">vignette("securetools")</a></code>. For orchestr, see
 <code><a href="https://ian-flores.github.io/orchestr/articles/quickstart.html" class="external-link">vignette("quickstart", package = "orchestr")</a></code>.</p>
 </div>
 <div class="section level2">
@@ -95,50 +98,21 @@ fundamentals, see
 <span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>ANTHROPIC_API_KEY <span class="op">=</span> <span class="st">"your-key-here"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="react-agent-with-tools">ReAct agent with tools<a class="anchor" aria-label="anchor" href="#react-agent-with-tools"></a>
+<h2 id="a-react-agent-with-tools">A ReAct agent with tools<a class="anchor" aria-label="anchor" href="#a-react-agent-with-tools"></a>
 </h2>
-<p>A ReAct (Reason + Act) agent is the standard pattern for tool-using
-LLMs. The agent receives a task, reasons about what to do next, acts by
-calling a tool, observes the result, and repeats until it has a final
-answer. Each iteration gives the LLM another chance to call a tool. A
-confused or manipulated agent can spiral into unbounded tool use.</p>
-<p>securetools makes ReAct loops safe by routing every tool call through
-parent-process validation before it reaches the sandbox. The LLM reasons
-freely; its actions are constrained by the guarantees of each tool.</p>
-<p>The following diagram shows the execution flow of a ReAct agent with
-securetools:</p>
-<pre><code>  ┌───────────────────────────────────────────────────┐
-  │                   ReAct Loop                      │
-  │                                                   │
-  │   ┌──────────┐    ┌──────────┐    ┌───────────┐   │
-  │   │          │    │          │    │           │   │
-  │   │  Reason  │───&gt;│   Act    │───&gt;│  Observe  │   │
-  │   │  (LLM)   │    │ (tool)   │    │ (result)  │   │
-  │   │          │    │          │    │           │   │
-  │   └──────────┘    └────┬─────┘    └─────┬─────┘   │
-  │        ^               │                │         │
-  │        │               v                │         │
-  │        │        ┌──────────────┐        │         │
-  │        │        │   Validate   │        │         │
-  │        │        │  (parent R)  │        │         │
-  │        │        │  - rate limit│        │         │
-  │        │        │  - allow-list│        │         │
-  │        │        │  - path check│        │         │
-  │        │        └──────┬───────┘        │         │
-  │        │               v                │         │
-  │        │        ┌──────────────┐        │         │
-  │        │        │   Execute    │        │         │
-  │        │        │  (sandbox)   │────────┘         │
-  │        │        └──────────────┘                  │
-  │        │                                          │
-  │        └──────────── loop ────────────────────────┘
-  │                                                   │
-  │   Done? ──yes──&gt; Return final answer              │
-  └───────────────────────────────────────────────────┘</code></pre>
-<p>Pass securetools to the <code><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent()</a></code> constructor with
-<code>secure = TRUE</code> so tool calls run inside a securer
-sandbox.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>ReAct (reason, then act) is the usual loop for an agent with tools.
+The model reads the task, decides what to do, calls a tool, looks at the
+result, and repeats until it has an answer. Every turn of the loop is
+another tool call, and an agent that is confused or has been manipulated
+can keep going for a long time.</p>
+<p>With securetools, every call is checked in the parent R process
+before the tool does anything. The model can ask for whatever it likes;
+the tool only does what its limits allow.</p>
+<p>Here is how one turn of the loop runs:</p>
+<figure class="hairline"><svg role="img" aria-label="Reason, act, validate, execute, observe, then loop until done and return the answer" viewbox="0 0 900 270" xmlns="http://www.w3.org/2000/svg"><defs><marker id="rx-arrow" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#2b1f12" stroke-width="1"></path></marker><pattern id="rx-hatch" width="6" height="6" patternunits="userSpaceOnUse" patterntransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#bf5a36" stroke-width="0.6" opacity="0.55"></line></pattern></defs><rect x="20" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="80.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">REASON</text><text x="80.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the model decides</text><text x="80.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">what to do next</text><path d="M140 144.0H176" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="178" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="238.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">ACT</text><text x="238.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">it asks for</text><text x="238.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">a tool call</text><path d="M298 144.0H334" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="336" y="102" width="150" height="84" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="411.0" y="127.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">VALIDATE</text><text x="411.0" y="141.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">rate limit</text><text x="411.0" y="154.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">allow-list</text><text x="411.0" y="167.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">path check</text><path d="M486 144.0H522" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="524" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="584.0" y="141.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">EXECUTE</text><text x="584.0" y="155.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the tool runs</text><path d="M644 144.0H680" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="682" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="742.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">OBSERVE</text><text x="742.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the result goes</text><text x="742.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">back to the model</text><path d="M742 176V250H80V178" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)" stroke-dasharray="3 3"></path><text x="411" y="244" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="2">LOOP</text><path d="M80 112V44H676" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><text x="90" y="36" font-family="Space Mono, ui-monospace, monospace" font-size="9.5" fill="#6b5638" text-anchor="start" font-weight="400" letter-spacing="0.4">done</text><rect x="678" y="24" width="200" height="40" fill="none" stroke="#bf5a36" stroke-width="0.75"></rect><text x="778.0" y="48.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#bf5a36" text-anchor="middle" font-weight="700" letter-spacing="1.2">RETURN THE ANSWER</text><path d="M20 201V206H298V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="159.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">THE MODEL</text><path d="M336 201V206H486V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="411.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">YOUR R SESSION</text><path d="M524 201V206H644V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="584.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">THE TOOL</text></svg><figcaption>Fig. 1 · One turn of the ReAct loop, with securetools checks in the middle</figcaption></figure><p>Pass the tools to <code><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent()</a></code> with
+<code>secure = TRUE</code> so the agent’s code runs in a securer
+session.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create security-scoped tools</span></span>
 <span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span></span>
@@ -159,48 +133,27 @@ sandbox.</p>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Read the file sales.csv from the data directory and calculate the total revenue."</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>When <code>secure = TRUE</code>, orchestr creates a
-<code>SecureSession</code> behind the scenes. Each
-<code>securer_tool</code> is converted to an ellmer tool definition that
-executes inside the sandbox. Path scoping, AST validation, and rate
-limits still apply at the parent-process level.</p>
+<p>With <code>secure = TRUE</code>, orchestr starts a
+<code>SecureSession</code> and converts each <code>securer_tool</code>
+into an ellmer tool. The path checks, the calculator’s function list,
+and the call limits all run in the parent process.</p>
 </div>
 <div class="section level2">
-<h2 id="supervisor-with-tool-specialists">Supervisor with tool specialists<a class="anchor" aria-label="anchor" href="#supervisor-with-tool-specialists"></a>
+<h2 id="a-supervisor-with-specialist-workers">A supervisor with specialist workers<a class="anchor" aria-label="anchor" href="#a-supervisor-with-specialist-workers"></a>
 </h2>
-<p>The supervisor pattern applies the principle of least privilege
-across multiple agents. Specialist workers each carry only the tools
-they need. A supervisor agent routes incoming requests to the
-appropriate worker without itself holding direct tool access.</p>
-<p>Each worker gets its own <code>SecureSession</code>, so rate limits,
-allowed directories, and domain allow-lists are isolated per worker. A
-compromised file worker cannot start making HTTP requests. The
-supervisor sees only high-level results, not raw tool outputs, which
-limits information leakage across agent boundaries. You can also tune
-constraints per role: generous rate limits for the data specialist,
-tight caps for the file writer.</p>
-<pre><code>  ┌─────────────────────────────────────────────────┐
-  │                 Supervisor Agent                 │
-  │           (no tools, routes only)                │
-  │                                                  │
-  │    "Read sales.csv, compute mean revenue"        │
-  │                                                  │
-  │         ┌──────────┬──────────┐                  │
-  │         v          v          v                  │
-  │   ┌───────────┐ ┌──────────┐ ┌──────────────┐   │
-  │   │   File    │ │  Data    │ │  Research    │   │
-  │   │ Specialist│ │Specialist│ │  Specialist  │   │
-  │   │           │ │          │ │              │   │
-  │   │ read_file │ │calculator│ │  fetch_url   │   │
-  │   │ write_file│ │ profiler │ │              │   │
-  │   └───────────┘ └──────────┘ └──────────────┘   │
-  │                                                  │
-  │   Each worker has its own SecureSession          │
-  │   with isolated rate limits and allow-lists      │
-  └─────────────────────────────────────────────────┘</code></pre>
-<p>A supervisor graph routes tasks to specialized worker agents, each
-carrying its own set of tools.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<p>Another option is to split the tools across several agents, so each
+one has only what it needs. A supervisor agent reads the request and
+hands it to the right worker. The supervisor has no tools of its
+own.</p>
+<p>Each worker gets its own <code>SecureSession</code>, with its own
+allowed folders, allowed domains, and call limits. A file worker that
+gets hijacked still can’t make web requests, because it was never given
+that tool. The supervisor only sees the workers’ answers, not the raw
+tool output. You can also set limits per role, for example a generous
+call limit for the data worker and a tight one for the worker that
+writes files.</p>
+<figure class="hairline"><svg role="img" aria-label="A supervisor routes a request to a file worker, a data worker, or a research worker" viewbox="0 0 900 262" xmlns="http://www.w3.org/2000/svg"><defs><marker id="sv-arrow" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#2b1f12" stroke-width="1"></path></marker><pattern id="sv-hatch" width="6" height="6" patternunits="userSpaceOnUse" patterntransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#bf5a36" stroke-width="0.6" opacity="0.55"></line></pattern></defs><text x="450" y="22" font-family="Space Mono, ui-monospace, monospace" font-size="9.5" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1">“READ SALES.CSV, COMPUTE MEAN REVENUE”</text><path d="M450 30V48" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="340" y="50" width="220" height="56" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="450.0" y="68.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">SUPERVISOR</text><text x="450.0" y="82.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">routes the request</text><text x="450.0" y="95.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">has no tools of its own</text><path d="M450 106V128" fill="none" stroke="#2b1f12" stroke-width="0.75"></path><path d="M170 128H730" fill="none" stroke="#2b1f12" stroke-width="0.75"></path><path d="M170 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="52" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="60" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="170.0" y="183.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">FILE WORKER</text><text x="170.0" y="197.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">read_file</text><text x="170.0" y="210.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">write_file</text><text x="170" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text><path d="M450 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="332" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="340" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="450.0" y="183.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">DATA WORKER</text><text x="450.0" y="197.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">calculator</text><text x="450.0" y="210.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">data_profile</text><text x="450" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text><path d="M730 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="612" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="620" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="730.0" y="190.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">RESEARCH WORKER</text><text x="730.0" y="204.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">fetch_url</text><text x="730" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text></svg><figcaption>Fig. 2 · Each worker gets its own session, rate limits, and allow-lists</figcaption></figure><p>Here is a supervisor with a data worker and a file worker:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Data agent: calculation and profiling</span></span>
 <span><span class="va">data_agent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
 <span>  <span class="st">"data_specialist"</span>,</span>
@@ -257,36 +210,32 @@ carrying its own set of tools.</p>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Read sales.csv, then calculate the mean of the revenue column."</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>The supervisor needs no tools of its own; it uses the
-<code>route</code> tool that <code><a href="https://ian-flores.github.io/orchestr/reference/graph_supervisor.html" class="external-link">supervisor_graph()</a></code> injects
-automatically. Workers each get their own <code>SecureSession</code>,
-isolating allowed directories and rate limits per worker.</p>
+<p>The supervisor routes with a <code>route</code> tool that
+<code><a href="https://ian-flores.github.io/orchestr/reference/graph_supervisor.html" class="external-link">supervisor_graph()</a></code> adds for it.</p>
 </div>
 <div class="section level2">
-<h2 id="rate-limiting-in-agent-loops">Rate limiting in agent loops<a class="anchor" aria-label="anchor" href="#rate-limiting-in-agent-loops"></a>
+<h2 id="call-limits-in-agent-loops">Call limits in agent loops<a class="anchor" aria-label="anchor" href="#call-limits-in-agent-loops"></a>
 </h2>
-<p>Rate limiting matters in agent loops because the LLM controls how
-many iterations occur. A ReAct agent that misunderstands a task might
-call the calculator 500 times trying to “verify” an answer. A research
-agent fetching URLs might follow links recursively, hammering an
-external API. Without hard caps, these loops become runaway execution:
-wasted tokens, exhausted external rate limits, enormous output that
-overwhelms downstream processing.</p>
-<p>securetools has two rate limiting mechanisms:</p>
+<p>In an agent loop, the model decides how many times to call a tool. An
+agent that misreads a task might call the calculator 500 times to
+“check” its answer. A research agent might keep following links and
+hammer an API. Each of those calls costs tokens and time.</p>
+<p>securetools has two kinds of limit:</p>
 <ul>
-<li>Lifetime caps (<code>max_calls</code>): the total number of times a
-tool can be invoked across the entire session. Once hit, every
-subsequent call returns an error. This is the backstop against runaway
-loops.</li>
-<li>Sliding window (<code>max_calls_per_minute</code>): limits burst
-frequency. Even if you allow 1000 lifetime calls, restricting to 10 per
-minute prevents overwhelming external services or disk I/O.</li>
+<li>
+<code>max_calls</code> caps the total number of calls to a tool.
+Once it’s reached, every later call fails. This is the one that stops a
+runaway loop.</li>
+<li>
+<code>max_calls_per_minute</code> (only on
+<code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code>) caps how often the tool can be called.
+You might allow 1000 calls in total but only 10 a minute, so an external
+service isn’t flooded.</li>
 </ul>
-<p>When a rate limit is reached, the tool returns a structured error
-message to the LLM (not an R exception), giving the agent a chance to
-adjust its strategy. It might summarize what it has so far instead of
-fetching more data.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p>When a limit is reached, the tool raises an error. ellmer passes the
+error back to the model as the tool’s result, so the agent can stop or,
+for example, summarize what it already has instead of fetching more.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Cap the calculator at 50 calls per agent session</span></span>
 <span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span>max_calls <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
 <span></span>
@@ -307,18 +256,18 @@ fetching more data.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_react.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">researcher</span><span class="op">)</span></span></code></pre></div>
-<p>When a limit is hit, the tool returns an error message to the LLM,
-which can then stop or adjust its approach.</p>
+<p><code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code> can’t fetch HTTPS URLs at the moment
+(see <code><a href="../articles/securetools.html">vignette("securetools")</a></code>), so this agent would get an
+error back from <code>https://api.github.com</code> until that is
+fixed.</p>
 </div>
 <div class="section level2">
-<h2 id="mixing-securetools-with-custom-tools">Mixing securetools with custom tools<a class="anchor" aria-label="anchor" href="#mixing-securetools-with-custom-tools"></a>
+<h2 id="custom-tools-next-to-securetools">Custom tools next to securetools<a class="anchor" aria-label="anchor" href="#custom-tools-next-to-securetools"></a>
 </h2>
-<p>Most agents need capabilities beyond what securetools provides
-directly. You can combine securetools factories with custom
-<code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> definitions in the same agent. All
-tools run inside the same secure session and share the same sandbox
-isolation.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<p>Most agents need something securetools doesn’t have. You can put your
+own <code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> definitions in the same agent
+as the built-in ones.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># A custom tool alongside securetools</span></span>
 <span><span class="va">timestamp_tool</span> <span class="op">&lt;-</span> <span class="fu">securer</span><span class="fu">::</span><span class="fu"><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer_tool</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"timestamp"</span>,</span>
@@ -348,23 +297,23 @@ isolation.</p>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"What time is it? Also, what is 2^10?"</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Custom tools follow the same security model as securetools factories:
-the <code>fn</code> runs in the parent process (not inside the sandbox),
-and orchestr handles the ellmer conversion automatically.</p>
+<p>A custom tool’s <code>fn</code> runs in the parent process, like the
+securetools ones. The difference is that it only has the checks you
+write into it.</p>
 </div>
 <div class="section level2">
 <h2 id="next-steps">Next steps<a class="anchor" aria-label="anchor" href="#next-steps"></a>
 </h2>
 <ul>
 <li>
-<code><a href="../articles/securetools.html">vignette("securetools")</a></code>: tool factory reference and
-security model</li>
+<code><a href="../articles/securetools.html">vignette("securetools")</a></code>: the tools and what each one
+checks</li>
 <li>
 <code><a href="https://ian-flores.github.io/orchestr/articles/quickstart.html" class="external-link">vignette("quickstart", package = "orchestr")</a></code>: agent and
 graph basics</li>
 <li>
 <code><a href="https://ian-flores.github.io/securer/articles/ellmer-integration.html" class="external-link">vignette("ellmer-integration", package = "securer")</a></code>:
-low-level ellmer wiring</li>
+connecting securer to ellmer directly</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -374,7 +323,20 @@ low-level ellmer wiring</li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ian Flores Siaca.</p>
+  <div class="title-block">
+<div>
+<b>Sheet</b>3 of 4
+</div>
+<div>
+<b>Quadrangle</b>securetools
+</div>
+<div>
+<b>Survey</b>Tools
+</div>
+<div>
+<b>Series</b>secure-r-dev
+</div>
+</div>
 </div>
 
 <div class="pkgdown-footer-right">

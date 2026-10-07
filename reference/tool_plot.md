@@ -2,7 +2,8 @@
 
 Returns a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
-that evaluates R plotting code and saves the result to a file.
+that runs base R plotting code and saves the plot to a file in the
+folders you allow.
 
 ## Usage
 
@@ -21,28 +22,27 @@ tool_plot(
 
 - allowed_dirs:
 
-  Character vector of directories the tool can write to.
+  Character vector of folders the tool can write to.
 
 - default_width:
 
-  Default plot width in inches. Default 8.
+  Plot width in inches when the caller doesn't give one. Default 8.
 
 - default_height:
 
-  Default plot height in inches. Default 6.
+  Plot height in inches when the caller doesn't give one. Default 6.
 
 - max_file_size:
 
-  Maximum output file size. Default `"5MB"`.
+  The largest plot file the tool will write. Default `"5MB"`.
 
 - max_calls:
 
-  Maximum invocations. `NULL` means unlimited.
+  The most times the tool can be called. `NULL` means no limit.
 
 - default_dpi:
 
-  Default resolution in dots per inch for raster formats (png, jpg).
-  Default 150.
+  Resolution in dots per inch for png and jpg files. Default 150.
 
 ## Value
 
@@ -50,12 +50,10 @@ A `securer_tool` object.
 
 ## Details
 
-The plot tool evaluates R plotting code in a restricted environment.
-Before evaluation, an AST walk validates that only allowed functions are
-called, preventing arbitrary code execution. The following categories of
-functions are permitted:
+Before running the code, the tool parses it and checks every function
+call against a list of allowed functions:
 
-- **Graphics**: `plot`, `lines`, `points`, `abline`, `hist`, `barplot`,
+- graphics: `plot`, `lines`, `points`, `abline`, `hist`, `barplot`,
   `boxplot`, `curve`, `title`, `legend`, `axis`, `mtext`, `text`, `par`,
   `grid`, `segments`, `arrows`, `polygon`, `rect`, `symbols`, `pie`,
   `pairs`, `heatmap`, `image`, `contour`, `persp`, `stripchart`,
@@ -63,19 +61,36 @@ functions are permitted:
   `fourfoldplot`, `mosaicplot`, `assocplot`, `smoothScatter`,
   `spineplot`, `stem`
 
-- **Helpers**: mathematical functions (`sqrt`, `log`, `exp`, etc.),
-  string functions (`paste`, `sprintf`, etc.), and statistical
-  distributions (`dnorm`, `rnorm`, etc.)
+- helpers: math functions (`sqrt`, `log`, `exp`, and so on), string
+  functions (`paste`, `sprintf`, and so on), and distributions (`dnorm`,
+  `rnorm`, and so on)
 
-- **Data manipulation**: `data.frame`, `list`, `matrix`, `lapply`,
-  `sapply`, `subset`, `with`, and others
+- data: `data.frame`, `list`, `matrix`, `lapply`, `sapply`, `subset`,
+  `with`, and others
 
-- **Operators**: arithmetic, comparison, and logical operators
+- arithmetic, comparison, and logical operators
 
-- **Flow control**: `if`, `for`, `while`, `{`, assignment
+- `if`, `for`, `while`, `{`, and assignment
 
-Supported output formats: png, pdf, svg, jpg/jpeg. The format is
-auto-detected from the file extension by default.
+The code then runs in a new environment whose parent is the base
+environment. Because of that, only
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) currently
+works: functions from graphics such as
+[`hist()`](https://rdrr.io/r/graphics/hist.html),
+[`lines()`](https://rdrr.io/r/graphics/lines.html), and
+[`barplot()`](https://rdrr.io/r/graphics/barplot.html) are on the list
+but aren't found when the code runs.
+
+This check does not stop arbitrary code yet.
+[`do.call()`](https://rdrr.io/r/base/do.call.html) is on the list and
+takes the function name as a string, so `do.call("system", list("ls"))`
+gets through. Only give this tool to code that runs in a sandboxed
+session.
+
+The tool writes png, pdf, svg, and jpg files, and picks the format from
+the file extension unless the caller passes `format`. The plot is drawn
+to a temporary file, checked against `max_file_size`, and then copied to
+the target path, which must be inside `allowed_dirs`.
 
 ## See also
 
@@ -101,7 +116,7 @@ plt@fn(
   plot_code = "plot(1:10, (1:10)^2, main = 'Example')"
 )
 #> $path
-#> [1] "/tmp/Rtmp82tPl7/scatter.png"
+#> [1] "/tmp/RtmpE0xQyS/scatter.png"
 #> 
 #> $size
 #> [1] 27235

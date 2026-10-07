@@ -1,6 +1,8 @@
-# Pipe-friendly alias for [`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
+# Add secureguard checks to a tool, in a pipe
 
-Lets you write
+The same as
+[`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md),
+named so it reads well in a pipe:
 `tool_calculator() |> with_guards(input_guards = list(...))`.
 
 ## Usage
@@ -18,9 +20,9 @@ with_guards(tool, ...)
 
 - ...:
 
-  Passed straight through to
+  Passed on to
   [`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md).
 
 ## Value
 
-A new `securer_tool` object.
+A new `securer_tool` with the checks added.

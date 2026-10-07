@@ -1,60 +1,28 @@
 # securetools
 
-> **Note:** Experimental release. APIs may change before the 1.0
-> stabilization — track the lifecycle badge above for the current tier.
+securetools has ready-made tools for LLM agents in R: a calculator, file
+reading and writing, SQL queries, web requests, plots, and R help
+lookup. Each tool comes with limits you set when you create it, such as
+which folders it can touch, which tables it can query, or which websites
+it can reach.
 
-Security-hardened tool definitions for R LLM agents. Pre-built
-[securer](https://github.com/ian-flores/securer) tool factories with
-path scoping, parameterized SQL, domain allow-lists, size limits, and
-rate limiting.
+The tools are built for
+[securer](https://github.com/ian-flores/securer), which runs an agent’s
+R code in a separate, sandboxed process. When that code calls a tool,
+the call goes back to your main R session, which checks it against the
+limits and only then does the work.
 
-## Why securetools?
+The package is experimental, and function names may still change.
 
-LLMs can call [`system()`](https://rdrr.io/r/base/system.html), write to
-any path, and run arbitrary SQL. securetools provides pre-built,
-security-hardened tool wrappers that enforce sandboxing, path
-restrictions, and query validation – so you can give AI agents real
-capabilities without giving them the keys to the kingdom.
+## Why use it
 
-## Part of the secure-r-dev Packages
-
-securetools is one of four packages for building governed AI agents in
-R:
-
-                     ┌─────────────┐
-                     │   securer    │  Sandboxed execution + tool-call IPC
-                     └──────┬───────┘
-                ┌───────────┴───────────┐
-                │                       │
-        ┌───────▼────────┐       ┌──────▼───────┐
-        │>>> securetools<<<│◄──────┤ secureguard  │
-        └────────────────┘ guards └──────┬───────┘
-                                         │
-                                  ┌──────▼───────┐
-                                  │ securebench  │  (evaluation)
-                                  └──────────────┘
-
-securetools composes securer and secureguard: it provides pre-built,
-security-hardened tool definitions that plug directly into securer
-sessions, and (via
-[`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md))
-wraps them with secureguard guardrails, giving agents safe access to
-files, SQL, URLs, and computation.
-
-| Package | Role |
-|----|----|
-| [securer](https://github.com/ian-flores/securer) | Sandboxed R execution with tool-call IPC |
-| [securetools](https://github.com/ian-flores/securetools) | Pre-built security-hardened tool definitions |
-| [secureguard](https://github.com/ian-flores/secureguard) | Input/code/output guardrails (injection, PII, secrets) |
-| [securebench](https://github.com/ian-flores/securebench) | Guardrail benchmarking with precision/recall/F1 metrics |
-
-Observability is built on OpenTelemetry: securetools emits optional
-tool-call spans via the [otel](https://otel.r-lib.org/) package, use
-[ellmer](https://ellmer.tidyverse.org/)’s native OpenTelemetry support
-to trace the LLM side of your agent, and
-[ragnar](https://ragnar.tidyverse.org/) for retrieval-augmented context.
-For graph-based agent orchestration on top of these packages, see
-[orchestr](https://github.com/ian-flores/orchestr).
+An agent with plain R can call
+[`system()`](https://rdrr.io/r/base/system.html), write to any path, and
+run any SQL. Writing your own safe versions of these tools takes care:
+symlinks can lead out of a folder, SQL strings can be injected into, and
+a URL can point at a server on your internal network. securetools
+handles those cases so you can give an agent useful tools without giving
+it the whole machine.
 
 ## Installation
 
@@ -64,46 +32,48 @@ For graph-based agent orchestration on top of these packages, see
 pak::pak("ian-flores/securetools")
 ```
 
-## Quick Start
+## A quick look
 
 ``` r
 
 library(securetools)
 library(securer)
 
-# Create tools with security constraints
+# Each tool gets its limits up front
 calc <- tool_calculator()
 reader <- tool_read_file(allowed_dirs = "/data", max_file_size = "50MB")
 sql <- tool_query_sql(conn = con, allowed_tables = c("users", "orders"))
 
-# Use with SecureSession
+# Code running in the session can call the tools like functions
 session <- SecureSession$new(tools = list(calc, reader, sql))
 session$execute('calculator(expression = "sqrt(144) + 2^3")')
 #> [1] 20
 session$close()
 ```
 
-## Available Tools
+## The tools
 
-| Tool | Factory | Security Features |
+| Function | What it does | Limits |
 |----|----|----|
-| Calculator | [`tool_calculator()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md) | AST validation, no code injection |
-| Data Profile | [`tool_data_profile()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md) | Row sampling for large data |
-| Read File | [`tool_read_file()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md) | Path scoping, size limits |
-| Write File | [`tool_write_file()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md) | Path scoping, overwrite protection |
-| SQL Query | [`tool_query_sql()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md) | Table allow-list, parameterized queries |
-| URL Fetch | [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md) | Domain allow-list, rate limiting |
-| Plot | [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md) | Path scoping, output size limits |
-| R Help | [`tool_r_help()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md) | Package allow-list |
+| [`tool_calculator()`](https://ian-flores.github.io/securetools/reference/tool_calculator.md) | Evaluates a math expression | Only arithmetic and math functions; anything else is rejected before it runs |
+| [`tool_data_profile()`](https://ian-flores.github.io/securetools/reference/tool_data_profile.md) | Summarizes a data frame | Samples rows from large data |
+| [`tool_read_file()`](https://ian-flores.github.io/securetools/reference/tool_read_file.md) | Reads csv, json, txt, xlsx, parquet, or rds files | Allowed folders only, file size cap |
+| [`tool_write_file()`](https://ian-flores.github.io/securetools/reference/tool_write_file.md) | Writes csv, json, txt, or rds files | Allowed folders only, size cap, no overwriting by default |
+| [`tool_query_sql()`](https://ian-flores.github.io/securetools/reference/tool_query_sql.md) | Runs a SELECT on one table | Allowed tables only; the agent never writes SQL |
+| [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md) | Makes a GET or HEAD request | Allowed domains only, no private IPs, rate limit |
+| [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md) | Draws a base R plot to a file | Allowed folders only, output size cap |
+| [`tool_r_help()`](https://ian-flores.github.io/securetools/reference/tool_r_help.md) | Returns an R help page as text | Allowed packages only |
 
-## Composing with secureguard
+Every tool also takes `max_calls`, a cap on how many times the agent can
+call it.
+
+## Adding secureguard checks
 
 [`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
-wraps any `securer_tool` with input/output guardrails from
-[secureguard](https://github.com/ian-flores/secureguard). The returned
-object is itself a `securer_tool` (same schema, same IPC contract) whose
-closure runs each invocation through the guards before and after the
-underlying function. Guardrail failures surface as tool-call errors:
+runs [secureguard](https://github.com/ian-flores/secureguard) checks on
+a tool’s arguments before the tool runs, and on its result afterwards.
+If a check fails, the tool call fails with an error. The result is still
+an ordinary securer tool, so you use it the same way:
 
 ``` r
 
@@ -116,49 +86,71 @@ guarded <- guarded_tool(
   output_guards = list(guard_output_secrets(action = "block"))
 )
 
-# `with_guards()` is the pipe-friendly alias.
+# `with_guards()` does the same thing and reads well in a pipe.
 guarded <- tool_calculator() |>
   with_guards(input_guards = list(guard_prompt_injection()))
 ```
 
-secureguard is a soft dependency (Suggests); calling
+secureguard is optional. If it isn’t installed,
 [`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
-without secureguard installed errors with a clear install hint.
+stops and tells you how to install it.
 
-## Design Principles
+## How it works
 
-- **Factory functions**: `tool_read_file(allowed_dirs = "/data")` forces
-  explicit security configuration
-- **Parent-side enforcement**: Tool constraints run in the host process,
-  not the sandbox. Even sandbox bypass leaves tool protections intact
-- **No raw SQL**: Structured query interface makes injection
-  structurally impossible
-- **Symlink resolution**:
-  [`normalizePath()`](https://rdrr.io/r/base/normalizePath.html) before
-  path prefix check prevents symlink escape
-- **AST walking**: Calculator validates expression trees, not strings
+You set the limits when you create a tool, for example
+`tool_read_file(allowed_dirs = "/data")`. There is no version of a tool
+without them.
 
-## Documentation
+The checks run in your main R session, not in the sandbox, so code in
+the sandbox can’t change or skip them.
 
-- [`vignette("securetools")`](https://ian-flores.github.io/securetools/articles/securetools.md)
-  – Getting started: tool factories, security configuration, and usage
-  with securer sessions
-- [`vignette("agent-integration")`](https://ian-flores.github.io/securetools/articles/agent-integration.md)
-  – End-to-end examples wiring securetools into LLM agent workflows
-- [`vignette("data-analyst-agent")`](https://ian-flores.github.io/securetools/articles/data-analyst-agent.md)
-  – Building a governed data analyst agent with securer + secureguard +
-  securetools
-- `system.file("examples", package = "securetools")` – Runnable
-  examples, including a Plumber REST API with guarded chat and sandboxed
-  execution
-- [pkgdown site](https://ian-flores.github.io/securetools/) – Full API
-  reference and rendered vignettes
+File paths are resolved with
+[`normalizePath()`](https://rdrr.io/r/base/normalizePath.html), which
+follows symlinks, before they are compared with the allowed folders. A
+symlink inside an allowed folder that points somewhere else is caught.
 
-## Contributing
+The SQL tool takes a table name, a list of columns, and an optional
+filter. It builds the query itself and passes the filter value as a
+parameter, so there is no SQL string for the agent to tamper with.
 
-Found a bug or have a feature request? Please [file an
-issue](https://github.com/ian-flores/securetools/issues) on GitHub.
-Contributions via pull requests are welcome.
+The calculator parses the expression and checks every function and name
+in it against a short list before evaluating it.
+
+## Related packages
+
+securetools is part of a small set of packages for running LLM agents in
+R more safely:
+
+- [securer](https://github.com/ian-flores/securer) runs agent code in a
+  sandbox.
+- [secureguard](https://github.com/ian-flores/secureguard) checks
+  prompts, generated code, and outputs for things like prompt injection
+  and leaked secrets.
+- [securebench](https://github.com/ian-flores/securebench) measures how
+  well your guardrails work. It complements
+  [vitals](https://vitals.tidyverse.org/).
+
+They build on Posit’s tools rather than replacing them. For tracing, use
+[ellmer](https://ellmer.tidyverse.org/)’s OpenTelemetry support through
+the [otel](https://otel.r-lib.org/) package. securetools also records a
+span for each tool call when otel tracing is on. For retrieval (RAG),
+use [ragnar](https://github.com/tidyverse/ragnar).
+
+## Learn more
+
+- [Getting
+  started](https://ian-flores.github.io/securetools/articles/securetools.html)
+- [Using securetools with
+  agents](https://ian-flores.github.io/securetools/articles/agent-integration.html)
+- [Building a data analyst
+  agent](https://ian-flores.github.io/securetools/articles/data-analyst-agent.html)
+- [Function
+  reference](https://ian-flores.github.io/securetools/reference/)
+- A Plumber API example ships with the package:
+  `system.file("examples", "plumber", package = "securetools")`
+
+Found a bug or have an idea? [Open an
+issue](https://github.com/ian-flores/securetools/issues).
 
 ## License
 
@@ -212,24 +204,20 @@ R help documentation lookup.
 Wrap tools with secureguard guardrails on input and output.
 
 - [`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
-  : Wrap a securer_tool with input and output guardrails
-
+  : Add secureguard checks to a tool
 - [`with_guards()`](https://ian-flores.github.io/securetools/reference/with_guards.md)
-  :
-
-  Pipe-friendly alias for
-  [`guarded_tool()`](https://ian-flores.github.io/securetools/reference/guarded_tool.md)
+  : Add secureguard checks to a tool, in a pipe
 
 # Articles
 
 ### Getting Started
 
-- [Getting Started with
+- [Getting started with
   securetools](https://ian-flores.github.io/securetools/articles/securetools.md):
 
 ### Integration
 
 - [Using securetools with
-  Agents](https://ian-flores.github.io/securetools/articles/agent-integration.md):
-- [Building a Data Analyst
-  Agent](https://ian-flores.github.io/securetools/articles/data-analyst-agent.md):
+  agents](https://ian-flores.github.io/securetools/articles/agent-integration.md):
+- [Building a data analyst
+  agent](https://ian-flores.github.io/securetools/articles/data-analyst-agent.md):

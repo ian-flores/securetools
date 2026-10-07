@@ -1,12 +1,12 @@
-# Wrap a securer_tool with input and output guardrails
+# Add secureguard checks to a tool
 
-Composes a tool from
+Wraps a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
-with guardrails from secureguard. The returned object is itself a
+so that every call runs secureguard guardrails on the arguments before
+the tool runs, and on the result afterwards. The result is still a
 [`securer::securer_tool()`](https://ian-flores.github.io/securer/reference/securer_tool.html)
-(same schema, same IPC contract) whose closure runs each invocation
-through the supplied input guardrails, executes the underlying tool,
-then runs the result through the output guardrails.
+with the same name, description, and arguments, so you use it the same
+way as the original.
 
 ## Usage
 
@@ -18,35 +18,35 @@ guarded_tool(tool, input_guards = list(), output_guards = list())
 
 - tool:
 
-  A `securer_tool` object (typically from one of the `tool_*()`
-  factories in this package, but any `securer_tool` works).
+  A `securer_tool`, usually from one of the `tool_*()` functions in this
+  package. Any `securer_tool` works.
 
 - input_guards:
 
-  A list of `secureguard` input guardrails (type `"input"` or `"code"`).
-  Each receives the stringified tool args and must pass for the call to
-  proceed.
+  A list of secureguard guardrails of type `"input"` or `"code"`. The
+  tool's arguments are turned into text and each guardrail must pass
+  before the tool runs.
 
 - output_guards:
 
-  A list of `secureguard` output guardrails (type `"output"`). Each
-  receives the tool's return value (coerced to text via
-  [`secureguard::output_to_text`](https://ian-flores.github.io/secureguard/reference/output_to_text.html))
-  and must pass for the result to be returned.
+  A list of secureguard guardrails of type `"output"`. The tool's result
+  is turned into text with
+  [`secureguard::output_to_text()`](https://ian-flores.github.io/secureguard/reference/output_to_text.html),
+  and each guardrail must pass before the result is returned.
 
 ## Value
 
-A new `securer_tool` object with guardrails applied.
+A new `securer_tool` with the checks added.
 
 ## Details
 
-Guardrail failures are translated into errors raised from the tool
-closure; inside a securer session these surface as tool-call errors and
-are returned to the LLM via ellmer's `ContentToolResult(error =)` shape.
+If a guardrail fails, the tool raises an error. Inside a securer session
+that becomes a tool-call error, which ellmer passes back to the model as
+an error result.
 
-Guardrails are applied lazily: if secureguard is not installed, calling
-`guarded_tool()` errors with a clear installation hint rather than
-silently skipping enforcement.
+secureguard is only needed when you call `guarded_tool()`. If it isn't
+installed, `guarded_tool()` stops with an error that says how to install
+it. It never returns a tool without the checks.
 
 ## Examples
 

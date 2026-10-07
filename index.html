@@ -8,9 +8,13 @@
 <title>Security-Hardened Tool Library for Large Language Model Agents • securetools</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/Hanken_Grotesk-0.4.10/font.css" rel="stylesheet">
+<link href="deps/Space_Mono-0.4.10/font.css" rel="stylesheet">
+<link href="deps/Fraunces-0.4.10/font.css" rel="stylesheet">
+<link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Security-Hardened Tool Library for Large Language Model Agents">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<meta property="og:title" content="Security-Hardened Tool Library for Large Language Model Agents">
 <meta name="description" content="Pre-built tool definitions for common data science operations with built-in security constraints. Tools are returned as securer::securer_tool() objects with path scoping, parameterized SQL, domain allow-lists, size limits, and rate limiting. Designed for use with securer sandboxed R code execution.">
 <meta property="og:description" content="Pre-built tool definitions for common data science operations with built-in security constraints. Tools are returned as securer::securer_tool() objects with path scoping, parameterized SQL, domain allow-lists, size limits, and rate limiting. Designed for use with securer sandboxed R code execution.">
 </head>
@@ -53,150 +57,103 @@
 </h1></div>
 <!-- badges: start -->
 
-<blockquote>
-<p><strong>Note:</strong> Experimental release. APIs may change before the 1.0 stabilization — track the lifecycle badge above for the current tier.</p>
-</blockquote>
-<p>Security-hardened tool definitions for R LLM agents. Pre-built <a href="https://github.com/ian-flores/securer" class="external-link">securer</a> tool factories with path scoping, parameterized SQL, domain allow-lists, size limits, and rate limiting.</p>
+<p>securetools has ready-made tools for LLM agents in R: a calculator, file reading and writing, SQL queries, web requests, plots, and R help lookup. Each tool comes with limits you set when you create it, such as which folders it can touch, which tables it can query, or which websites it can reach.</p>
+<p>The tools are built for <a href="https://github.com/ian-flores/securer" class="external-link">securer</a>, which runs an agent’s R code in a separate, sandboxed process. When that code calls a tool, the call goes back to your main R session, which checks it against the limits and only then does the work.</p>
+<p>The package is experimental, and function names may still change.</p>
 <div class="section level2">
-<h2 id="why-securetools">Why securetools?<a class="anchor" aria-label="anchor" href="#why-securetools"></a>
+<h2 id="why-use-it">Why use it<a class="anchor" aria-label="anchor" href="#why-use-it"></a>
 </h2>
-<p>LLMs can call <code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code>, write to any path, and run arbitrary SQL. securetools provides pre-built, security-hardened tool wrappers that enforce sandboxing, path restrictions, and query validation – so you can give AI agents real capabilities without giving them the keys to the kingdom.</p>
-</div>
-<div class="section level2">
-<h2 id="part-of-the-secure-r-dev-packages">Part of the secure-r-dev Packages<a class="anchor" aria-label="anchor" href="#part-of-the-secure-r-dev-packages"></a>
-</h2>
-<p>securetools is one of four packages for building governed AI agents in R:</p>
-<pre><code>                 ┌─────────────┐
-                 │   securer    │  Sandboxed execution + tool-call IPC
-                 └──────┬───────┘
-            ┌───────────┴───────────┐
-            │                       │
-    ┌───────▼────────┐       ┌──────▼───────┐
-    │&gt;&gt;&gt; securetools&lt;&lt;&lt;│◄──────┤ secureguard  │
-    └────────────────┘ guards └──────┬───────┘
-                                     │
-                              ┌──────▼───────┐
-                              │ securebench  │  (evaluation)
-                              └──────────────┘</code></pre>
-<p>securetools composes securer and secureguard: it provides pre-built, security-hardened tool definitions that plug directly into securer sessions, and (via <code><a href="reference/guarded_tool.html">guarded_tool()</a></code>) wraps them with secureguard guardrails, giving agents safe access to files, SQL, URLs, and computation.</p>
-<table class="table">
-<colgroup>
-<col width="60%">
-<col width="40%">
-</colgroup>
-<thead><tr>
-<th>Package</th>
-<th>Role</th>
-</tr></thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/ian-flores/securer" class="external-link">securer</a></td>
-<td>Sandboxed R execution with tool-call IPC</td>
-</tr>
-<tr>
-<td><a href="https://github.com/ian-flores/securetools" class="external-link">securetools</a></td>
-<td>Pre-built security-hardened tool definitions</td>
-</tr>
-<tr>
-<td><a href="https://github.com/ian-flores/secureguard" class="external-link">secureguard</a></td>
-<td>Input/code/output guardrails (injection, PII, secrets)</td>
-</tr>
-<tr>
-<td><a href="https://github.com/ian-flores/securebench" class="external-link">securebench</a></td>
-<td>Guardrail benchmarking with precision/recall/F1 metrics</td>
-</tr>
-</tbody>
-</table>
-<p>Observability is built on OpenTelemetry: securetools emits optional tool-call spans via the <a href="https://otel.r-lib.org/" class="external-link">otel</a> package, use <a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a>’s native OpenTelemetry support to trace the LLM side of your agent, and <a href="https://ragnar.tidyverse.org/" class="external-link">ragnar</a> for retrieval-augmented context. For graph-based agent orchestration on top of these packages, see <a href="https://github.com/ian-flores/orchestr" class="external-link">orchestr</a>.</p>
+<p>An agent with plain R can call <code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code>, write to any path, and run any SQL. Writing your own safe versions of these tools takes care: symlinks can lead out of a folder, SQL strings can be injected into, and a URL can point at a server on your internal network. securetools handles those cases so you can give an agent useful tools without giving it the whole machine.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"ian-flores/securetools"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="quick-start">Quick Start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
+<h2 id="a-quick-look">A quick look<a class="anchor" aria-label="anchor" href="#a-quick-look"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securetools/">securetools</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securer/" class="external-link">securer</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Create tools with security constraints</span></span>
+<span><span class="co"># Each tool gets its limits up front</span></span>
 <span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/data"</span>, max_file_size <span class="op">=</span> <span class="st">"50MB"</span><span class="op">)</span></span>
 <span><span class="va">sql</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tool_query_sql.html">tool_query_sql</a></span><span class="op">(</span>conn <span class="op">=</span> <span class="va">con</span>, allowed_tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"users"</span>, <span class="st">"orders"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Use with SecureSession</span></span>
+<span><span class="co"># Code running in the session can call the tools like functions</span></span>
 <span><span class="va">session</span> <span class="op">&lt;-</span> <span class="va"><a href="https://ian-flores.github.io/securer/reference/SecureSession.html" class="external-link">SecureSession</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span>, <span class="va">reader</span>, <span class="va">sql</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">execute</span><span class="op">(</span><span class="st">'calculator(expression = "sqrt(144) + 2^3")'</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 20</span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="available-tools">Available Tools<a class="anchor" aria-label="anchor" href="#available-tools"></a>
+<h2 id="the-tools">The tools<a class="anchor" aria-label="anchor" href="#the-tools"></a>
 </h2>
 <table class="table">
 <colgroup>
-<col width="17%">
-<col width="26%">
-<col width="55%">
+<col width="33%">
+<col width="33%">
+<col width="33%">
 </colgroup>
 <thead><tr>
-<th>Tool</th>
-<th>Factory</th>
-<th>Security Features</th>
+<th>Function</th>
+<th>What it does</th>
+<th>Limits</th>
 </tr></thead>
 <tbody>
 <tr>
-<td>Calculator</td>
 <td><code><a href="reference/tool_calculator.html">tool_calculator()</a></code></td>
-<td>AST validation, no code injection</td>
+<td>Evaluates a math expression</td>
+<td>Only arithmetic and math functions; anything else is rejected before it runs</td>
 </tr>
 <tr>
-<td>Data Profile</td>
 <td><code><a href="reference/tool_data_profile.html">tool_data_profile()</a></code></td>
-<td>Row sampling for large data</td>
+<td>Summarizes a data frame</td>
+<td>Samples rows from large data</td>
 </tr>
 <tr>
-<td>Read File</td>
 <td><code><a href="reference/tool_read_file.html">tool_read_file()</a></code></td>
-<td>Path scoping, size limits</td>
+<td>Reads csv, json, txt, xlsx, parquet, or rds files</td>
+<td>Allowed folders only, file size cap</td>
 </tr>
 <tr>
-<td>Write File</td>
 <td><code><a href="reference/tool_write_file.html">tool_write_file()</a></code></td>
-<td>Path scoping, overwrite protection</td>
+<td>Writes csv, json, txt, or rds files</td>
+<td>Allowed folders only, size cap, no overwriting by default</td>
 </tr>
 <tr>
-<td>SQL Query</td>
 <td><code><a href="reference/tool_query_sql.html">tool_query_sql()</a></code></td>
-<td>Table allow-list, parameterized queries</td>
+<td>Runs a SELECT on one table</td>
+<td>Allowed tables only; the agent never writes SQL</td>
 </tr>
 <tr>
-<td>URL Fetch</td>
 <td><code><a href="reference/tool_fetch_url.html">tool_fetch_url()</a></code></td>
-<td>Domain allow-list, rate limiting</td>
+<td>Makes a GET or HEAD request</td>
+<td>Allowed domains only, no private IPs, rate limit</td>
 </tr>
 <tr>
-<td>Plot</td>
 <td><code><a href="reference/tool_plot.html">tool_plot()</a></code></td>
-<td>Path scoping, output size limits</td>
+<td>Draws a base R plot to a file</td>
+<td>Allowed folders only, output size cap</td>
 </tr>
 <tr>
-<td>R Help</td>
 <td><code><a href="reference/tool_r_help.html">tool_r_help()</a></code></td>
-<td>Package allow-list</td>
+<td>Returns an R help page as text</td>
+<td>Allowed packages only</td>
 </tr>
 </tbody>
 </table>
+<p>Every tool also takes <code>max_calls</code>, a cap on how many times the agent can call it.</p>
 </div>
 <div class="section level2">
-<h2 id="composing-with-secureguard">Composing with secureguard<a class="anchor" aria-label="anchor" href="#composing-with-secureguard"></a>
+<h2 id="adding-secureguard-checks">Adding secureguard checks<a class="anchor" aria-label="anchor" href="#adding-secureguard-checks"></a>
 </h2>
-<p><code><a href="reference/guarded_tool.html">guarded_tool()</a></code> wraps any <code>securer_tool</code> with input/output guardrails from <a href="https://github.com/ian-flores/secureguard" class="external-link">secureguard</a>. The returned object is itself a <code>securer_tool</code> (same schema, same IPC contract) whose closure runs each invocation through the guards before and after the underlying function. Guardrail failures surface as tool-call errors:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p><code><a href="reference/guarded_tool.html">guarded_tool()</a></code> runs <a href="https://github.com/ian-flores/secureguard" class="external-link">secureguard</a> checks on a tool’s arguments before the tool runs, and on its result afterwards. If a check fails, the tool call fails with an error. The result is still an ordinary securer tool, so you use it the same way:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securetools/">securetools</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/secureguard/" class="external-link">secureguard</a></span><span class="op">)</span></span>
 <span></span>
@@ -206,47 +163,46 @@
 <span>  output_guards <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_output_secrets.html" class="external-link">guard_output_secrets</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"block"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># `with_guards()` is the pipe-friendly alias.</span></span>
+<span><span class="co"># `with_guards()` does the same thing and reads well in a pipe.</span></span>
 <span><span class="va">guarded</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="reference/with_guards.html">with_guards</a></span><span class="op">(</span>input_guards <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_prompt_injection.html" class="external-link">guard_prompt_injection</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>secureguard is a soft dependency (Suggests); calling <code><a href="reference/guarded_tool.html">guarded_tool()</a></code> without secureguard installed errors with a clear install hint.</p>
+<p>secureguard is optional. If it isn’t installed, <code><a href="reference/guarded_tool.html">guarded_tool()</a></code> stops and tells you how to install it.</p>
 </div>
 <div class="section level2">
-<h2 id="design-principles">Design Principles<a class="anchor" aria-label="anchor" href="#design-principles"></a>
+<h2 id="how-it-works">How it works<a class="anchor" aria-label="anchor" href="#how-it-works"></a>
 </h2>
+<p>You set the limits when you create a tool, for example <code>tool_read_file(allowed_dirs = "/data")</code>. There is no version of a tool without them.</p>
+<p>The checks run in your main R session, not in the sandbox, so code in the sandbox can’t change or skip them.</p>
+<p>File paths are resolved with <code><a href="https://rdrr.io/r/base/normalizePath.html" class="external-link">normalizePath()</a></code>, which follows symlinks, before they are compared with the allowed folders. A symlink inside an allowed folder that points somewhere else is caught.</p>
+<p>The SQL tool takes a table name, a list of columns, and an optional filter. It builds the query itself and passes the filter value as a parameter, so there is no SQL string for the agent to tamper with.</p>
+<p>The calculator parses the expression and checks every function and name in it against a short list before evaluating it.</p>
+</div>
+<div class="section level2">
+<h2 id="related-packages">Related packages<a class="anchor" aria-label="anchor" href="#related-packages"></a>
+</h2>
+<p>securetools is part of a small set of packages for running LLM agents in R more safely:</p>
 <ul>
 <li>
-<strong>Factory functions</strong>: <code>tool_read_file(allowed_dirs = "/data")</code> forces explicit security configuration</li>
+<a href="https://github.com/ian-flores/securer" class="external-link">securer</a> runs agent code in a sandbox.</li>
 <li>
-<strong>Parent-side enforcement</strong>: Tool constraints run in the host process, not the sandbox. Even sandbox bypass leaves tool protections intact</li>
+<a href="https://github.com/ian-flores/secureguard" class="external-link">secureguard</a> checks prompts, generated code, and outputs for things like prompt injection and leaked secrets.</li>
 <li>
-<strong>No raw SQL</strong>: Structured query interface makes injection structurally impossible</li>
-<li>
-<strong>Symlink resolution</strong>: <code><a href="https://rdrr.io/r/base/normalizePath.html" class="external-link">normalizePath()</a></code> before path prefix check prevents symlink escape</li>
-<li>
-<strong>AST walking</strong>: Calculator validates expression trees, not strings</li>
+<a href="https://github.com/ian-flores/securebench" class="external-link">securebench</a> measures how well your guardrails work. It complements <a href="https://vitals.tidyverse.org/" class="external-link">vitals</a>.</li>
 </ul>
+<p>They build on Posit’s tools rather than replacing them. For tracing, use <a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a>’s OpenTelemetry support through the <a href="https://otel.r-lib.org/" class="external-link">otel</a> package. securetools also records a span for each tool call when otel tracing is on. For retrieval (RAG), use <a href="https://github.com/tidyverse/ragnar" class="external-link">ragnar</a>.</p>
 </div>
 <div class="section level2">
-<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
+<h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
 <ul>
-<li>
-<code><a href="articles/securetools.html">vignette("securetools")</a></code> – Getting started: tool factories, security configuration, and usage with securer sessions</li>
-<li>
-<code><a href="articles/agent-integration.html">vignette("agent-integration")</a></code> – End-to-end examples wiring securetools into LLM agent workflows</li>
-<li>
-<code><a href="articles/data-analyst-agent.html">vignette("data-analyst-agent")</a></code> – Building a governed data analyst agent with securer + secureguard + securetools</li>
-<li>
-<code>system.file("examples", package = "securetools")</code> – Runnable examples, including a Plumber REST API with guarded chat and sandboxed execution</li>
-<li>
-<a href="https://ian-flores.github.io/securetools/">pkgdown site</a> – Full API reference and rendered vignettes</li>
+<li><a href="https://ian-flores.github.io/securetools/articles/securetools.html">Getting started</a></li>
+<li><a href="https://ian-flores.github.io/securetools/articles/agent-integration.html">Using securetools with agents</a></li>
+<li><a href="https://ian-flores.github.io/securetools/articles/data-analyst-agent.html">Building a data analyst agent</a></li>
+<li><a href="https://ian-flores.github.io/securetools/reference/">Function reference</a></li>
+<li>A Plumber API example ships with the package: <code>system.file("examples", "plumber", package = "securetools")</code>
+</li>
 </ul>
-</div>
-<div class="section level2">
-<h2 id="contributing">Contributing<a class="anchor" aria-label="anchor" href="#contributing"></a>
-</h2>
-<p>Found a bug or have a feature request? Please <a href="https://github.com/ian-flores/securetools/issues" class="external-link">file an issue</a> on GitHub. Contributions via pull requests are welcome.</p>
+<p>Found a bug or have an idea? <a href="https://github.com/ian-flores/securetools/issues" class="external-link">Open an issue</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
@@ -300,7 +256,20 @@
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ian Flores Siaca.</p>
+  <div class="title-block">
+<div>
+<b>Sheet</b>3 of 4
+</div>
+<div>
+<b>Quadrangle</b>securetools
+</div>
+<div>
+<b>Survey</b>Tools
+</div>
+<div>
+<b>Series</b>secure-r-dev
+</div>
+</div>
 </div>
 
 <div class="pkgdown-footer-right">

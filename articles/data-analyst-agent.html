@@ -5,12 +5,16 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Building a Data Analyst Agent • securetools</title>
+<title>Building a data analyst agent • securetools</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/Hanken_Grotesk-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/Space_Mono-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/Fraunces-0.4.10/font.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Building a Data Analyst Agent">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Building a data analyst agent">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -52,7 +56,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Building a Data Analyst Agent</h1>
+      <h1>Building a data analyst agent</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/ian-flores/securetools/blob/main/vignettes/data-analyst-agent.Rmd" class="external-link"><code>vignettes/data-analyst-agent.Rmd</code></a></small>
@@ -64,95 +68,74 @@
 <div class="section level2">
 <h2 id="the-problem">The problem<a class="anchor" aria-label="anchor" href="#the-problem"></a>
 </h2>
-<p>Large language models are excellent at generating R code. Give one a
-dataset and a question, “What is the median income by state?”, and it
-will produce plausible <code>dplyr</code> pipelines on the first try.
-But if you <code>eval(parse(text = ...))</code> that code in your own R
-session, the model has full access to your file system, your network,
-and every secret in your environment variables. A single prompt
-injection buried in a CSV column name or a user’s follow-up question can
-turn your helpful data analyst into an exfiltration tool.</p>
-<p>The <strong>secure-r-dev</strong> packages solve this problem in
-layers. Each layer addresses a different class of threat, and they
-compose into a governed agent that is safe to point at real data:</p>
-<pre><code>                 ┌─────────────┐
-                 │   securer    │  Sandboxed R execution + tool-call IPC
-                 └──────┬───────┘
-            ┌───────────┴───────────┐
-            │                       │
-     ┌──────▼───────┐        ┌──────▼──────┐
-     │ securetools   │        │ secureguard │
-     │ (hardened     │◄───────┤ (input/code/│
-     │  tools)       │ guards │  output     │
-     └───────────────┘        │  guardrails)│
-                              └─────────────┘</code></pre>
-<ul>
+<p>LLMs are good at writing R code. Give one a dataset and a question
+like “What is the median income by state?” and you’ll usually get a
+sensible <code>dplyr</code> pipeline back. But if you run that code with
+<code>eval(parse(text = ...))</code> in your own R session, it can do
+anything you can: read your files, use your network, and see every
+secret in your environment variables. One prompt injection hidden in a
+CSV column name or a follow-up question is enough to turn your data
+analyst into something that sends your data elsewhere.</p>
+<p>The secure-r-dev packages each handle one part of this problem, and
+you can use them together:</p>
+<figure class="hairline"><svg role="img" aria-label="securetools and secureguard sit on top of securer; secureguard guards securetools" viewbox="0 0 700 222" xmlns="http://www.w3.org/2000/svg"><defs><marker id="st-arrow" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#2b1f12" stroke-width="1"></path></marker><pattern id="st-hatch" width="6" height="6" patternunits="userSpaceOnUse" patterntransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#bf5a36" stroke-width="0.6" opacity="0.55"></line></pattern></defs><rect x="40" y="30" width="260" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="170.0" y="59.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">SECURETOOLS</text><text x="170.0" y="73.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">tools with limits built in</text><rect x="400" y="30" width="260" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="530.0" y="59.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">SECUREGUARD</text><text x="530.0" y="73.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">checks input, code, output</text><path d="M400 62H302" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#st-arrow)"></path><text x="351" y="54" font-family="Space Mono, ui-monospace, monospace" font-size="9.5" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">guards</text><rect x="40" y="150" width="620" height="56" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="350.0" y="175.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">SECURER</text><text x="350.0" y="189.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">runs the agent’s code in a sandbox, with tool calls back to your session</text><path d="M170 94V148" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#st-arrow)"></path><path d="M530 94V150" fill="none" stroke="#2b1f12" stroke-width="0.75" stroke-dasharray="3 3"></path><text x="178" y="126" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="start" font-weight="400" letter-spacing="0.4">imports</text><text x="538" y="126" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="start" font-weight="400" letter-spacing="0.4">optional hook</text></svg><figcaption>Fig. 1 · How the three packages fit together in this example</figcaption></figure><ul>
 <li>
-<a href="https://github.com/ian-flores/securer" class="external-link">securer</a> runs
-LLM-generated code in a sandboxed child process with tool-call IPC.</li>
-<li>
-<strong>securetools</strong> (this package) provides pre-built,
-security-hardened tool factories: path-scoped file I/O, an AST-validated
-calculator, parameterized SQL, and more.</li>
+<a href="https://github.com/ian-flores/securer" class="external-link">securer</a> runs the
+generated code in a separate R process, optionally inside an OS sandbox,
+and lets that code call tools you register.</li>
+<li>securetools (this package) has the tools: file reading and writing
+limited to set folders, a calculator that only accepts math, SQL queries
+without raw SQL, and a few more.</li>
 <li>
 <a href="https://github.com/ian-flores/secureguard" class="external-link">secureguard</a>
-supplies input, code, and output guardrails that catch prompt injection,
-dangerous code, PII, and leaked secrets.</li>
+checks the question, the generated code, and the output for prompt
+injection, dangerous calls, personal data, and secrets.</li>
 </ul>
-<p>A fourth package, <a href="https://github.com/ian-flores/securebench" class="external-link">securebench</a>,
-measures guardrail precision/recall/F1 so you can tune your defenses
-with numbers instead of guesses; see its documentation for the
-evaluation workflow. For observability, you do not need a bespoke
-tracing package: <a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a>
-ships native OpenTelemetry support, so traces from the LLM side of your
-agent flow into any OTel-compatible backend. For retrieval-augmented
-context, see <a href="https://ragnar.tidyverse.org/" class="external-link">ragnar</a>.</p>
-<p>This tutorial builds a <strong>data analyst agent</strong> from
-scratch: an agent that accepts natural-language questions about a
-dataset, generates R code to answer them, and executes that code in a
-sandbox with guardrails on every side. Every code chunk runs without
-external API keys; we mock the LLM so you can follow along on any
-machine. (Chunks are not evaluated at build time because they spawn
-child R processes; copy them into a session to run them.)</p>
+<p><a href="https://github.com/ian-flores/securebench" class="external-link">securebench</a>
+measures how well your guardrails work (precision, recall, F1), so you
+can tune them against real numbers. For tracing, use <a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a>’s OpenTelemetry support,
+which sends traces of the LLM side of your agent to any OpenTelemetry
+backend. For retrieval (RAG), use <a href="https://ragnar.tidyverse.org/" class="external-link">ragnar</a>.</p>
+<p>This tutorial builds a data analyst agent: it takes a question about
+a dataset in plain English, writes R code to answer it, and runs that
+code in a separate process with checks before and after. You don’t need
+an API key, because the LLM is replaced by a stub that returns fixed
+code. The chunks aren’t run when the vignette is built, since they start
+child R processes. Copy them into an R session to try them.</p>
 </div>
 <div class="section level2">
 <h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ian-flores/securer"</span>, <span class="st">"ian-flores/securetools"</span>,</span>
 <span>           <span class="st">"ian-flores/secureguard"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securer/" class="external-link">securer</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securetools/">securetools</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/secureguard/" class="external-link">secureguard</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="layer-1-safe-execution-securer-securetools">Layer 1: safe execution (securer + securetools)<a class="anchor" aria-label="anchor" href="#layer-1-safe-execution-securer-securetools"></a>
+<h2 id="step-1-run-the-code-somewhere-else-securer-and-securetools">Step 1: run the code somewhere else (securer and securetools)<a class="anchor" aria-label="anchor" href="#step-1-run-the-code-somewhere-else-securer-and-securetools"></a>
 </h2>
-<p>A governed agent starts with isolation. When an LLM generates code,
-that code must run in a process where it cannot read
-<code>/etc/passwd</code>, call <code>system("curl ...")</code>, or
-modify files outside an allowed directory. In this stack,
-<code>securer</code> provides that isolation via a child R process
-connected over a Unix domain socket, optionally wrapped in an OS-level
-sandbox (macOS Seatbelt or Linux bubblewrap).</p>
-<p>Isolation is necessary but not sufficient. The agent also needs
-<em>capabilities</em>: the ability to read data files, compute
-expressions, and write results. These capabilities are exposed as
-<strong>tools</strong>: functions registered in the parent process that
-the child can invoke by name. The child process pauses, sends a JSON
-request over the socket, the parent executes the function with validated
-arguments, and sends the result back. The child never touches the real
-implementation.</p>
+<p>Code the LLM writes shouldn’t run in your own R session, where it
+could read <code>/etc/passwd</code>, call
+<code>system("curl ...")</code>, or change files anywhere. securer runs
+it in a child R process that talks to your session over a Unix domain
+socket. You can also wrap that process in an OS sandbox (Seatbelt on
+macOS, bubblewrap on Linux).</p>
+<p>The agent still needs to do useful things, like read a data file or
+save a result. You give it those abilities as tools: functions
+registered in the parent process that the child can call by name. When
+the child calls one, it pauses and sends the arguments to the parent as
+JSON. The parent checks them, runs the function, and sends the result
+back. The child never runs the tool’s code itself.</p>
 <div class="section level3">
 <h3 id="creating-a-session-with-tools">Creating a session with tools<a class="anchor" aria-label="anchor" href="#creating-a-session-with-tools"></a>
 </h3>
-<p>Our data analyst needs three tools: a calculator for quick
-arithmetic, a file reader for loading datasets, and a file writer for
-saving results. securetools provides factory functions for all three,
-with built-in security constraints like path allow-lists.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>The analyst gets three tools: a calculator, a file reader, and a file
+writer. All three are limited to a temporary workspace folder.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># The analyst can only touch files in a temporary workspace</span></span>
 <span><span class="va">workspace</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -177,20 +160,21 @@ with built-in security constraints like path allow-lists.</p>
 <span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span>, <span class="va">reader</span>, <span class="va">writer</span><span class="op">)</span>,</span>
 <span>  sandbox <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The <code>sandbox = FALSE</code> flag keeps this tutorial runnable
-everywhere. In production, you would set <code>sandbox = TRUE</code> to
-enable Seatbelt or bubblewrap. Even without OS sandboxing, the tool
-architecture means the child process can only perform actions you have
-explicitly registered.</p>
+<p><code>sandbox = FALSE</code> lets this tutorial run on any machine.
+For real use, set <code>sandbox = TRUE</code> to turn on Seatbelt or
+bubblewrap. Without the OS sandbox, the child is an ordinary R process:
+the tools keep their limits, but code that skips the tools and calls
+<code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code> directly will run. The code guardrails in step 2
+are what stop that here.</p>
 </div>
 <div class="section level3">
 <h3 id="executing-code-with-tool-calls">Executing code with tool calls<a class="anchor" aria-label="anchor" href="#executing-code-with-tool-calls"></a>
 </h3>
-<p>Now we can run analyst-style code. The child process sees
+<p>Now run some analyst-style code. In the child process,
 <code>calculator</code>, <code>read_file</code>, and
-<code>write_file</code> as ordinary R functions, but every call crosses
-the IPC boundary.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code>write_file</code> look like ordinary R functions, but each call
+goes to the parent.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">session</span><span class="op">$</span><span class="fu">execute</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">'</span></span>
 <span><span class="st">  # Read the dataset using the file tool (returns a list of rows)</span></span>
 <span><span class="st">  raw &lt;- read_file(path = "%s/states.csv", format = "auto")</span></span>
@@ -205,21 +189,23 @@ the IPC boundary.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">result</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="va">session</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Notice how <code>read_file()</code> and <code>calculator()</code>
-look like regular function calls from the child’s perspective. Behind
-the scenes, each one paused execution, serialized the arguments to JSON,
-sent them over the Unix socket, and waited for the parent to respond. If
-the child had tried to call <code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code> or
-<code>readLines("/etc/passwd")</code>, the sandbox would block it.</p>
+<p>This prints
+<code>Average state population: 24646.8 (thousands)</code>. Each call to
+<code>read_file()</code> and <code>calculator()</code> paused the child,
+sent the arguments over the socket, and waited for the parent’s answer.
+Had the code called <code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code> or
+<code>readLines("/etc/passwd")</code> instead, the OS sandbox would
+block it when <code>sandbox = TRUE</code>. With
+<code>sandbox = FALSE</code>, as here, nothing would.</p>
 </div>
 <div class="section level3">
 <h3 id="session-pools-for-production">Session pools for production<a class="anchor" aria-label="anchor" href="#session-pools-for-production"></a>
 </h3>
-<p>In a production setting (a Shiny app or a Plumber API) you do not
-want to pay the startup cost of a new R process on every request. A
-<code>SecureSessionPool</code> pre-warms multiple sessions and
-dispatches work to idle ones.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p>In a Shiny app or a Plumber API, you don’t want to start a new R
+process for every request. A <code>SecureSessionPool</code> starts
+several sessions ahead of time and hands each request to one that’s
+free.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pool</span> <span class="op">&lt;-</span> <span class="va"><a href="https://ian-flores.github.io/securer/reference/SecureSessionPool.html" class="external-link">SecureSessionPool</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
 <span>  size <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span><span class="op">)</span>,</span>
@@ -234,28 +220,26 @@ dispatches work to idle ones.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"100/4+25 ="</span>, <span class="va">r2</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pool</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Dead sessions are automatically restarted, so the pool self-heals
-after crashes or timeouts. A complete Plumber API built on this pattern
-ships with the package; see
+<p>If a session dies from a crash or a timeout, the pool restarts it.
+The package includes a full Plumber API built this way; see
 <code>system.file("examples", "plumber", package = "securetools")</code>.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="layer-2-three-lines-of-defense-secureguard">Layer 2: three lines of defense (secureguard)<a class="anchor" aria-label="anchor" href="#layer-2-three-lines-of-defense-secureguard"></a>
+<h2 id="step-2-check-the-input-code-and-output-secureguard">Step 2: check the input, code, and output (secureguard)<a class="anchor" aria-label="anchor" href="#step-2-check-the-input-code-and-output-secureguard"></a>
 </h2>
-<p>Isolation keeps the host safe from the agent’s code, but it does not
-protect the agent from malicious <em>input</em>. A prompt injection
-hiding in a user’s question could convince the model to generate
-destructive code. The model’s <em>output</em> might accidentally include
-PII or credentials found in the dataset. secureguard provides three
-composable defense layers: input guardrails, code guardrails, and output
+<p>A separate process protects your machine from the agent’s code. It
+does nothing about bad input: a prompt injection in the user’s question
+could get the model to write harmful code. And the answer might include
+personal data or credentials that were in the dataset. secureguard has
+checks for each of these: input guardrails, code guardrails, and output
 guardrails.</p>
 <div class="section level3">
 <h3 id="input-rejecting-prompt-injection">Input: rejecting prompt injection<a class="anchor" aria-label="anchor" href="#input-rejecting-prompt-injection"></a>
 </h3>
-<p>The first line of defense checks the user’s question before it ever
-reaches the LLM.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<p>The input check looks at the user’s question before it goes to the
+LLM.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">injection_guard</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_prompt_injection.html" class="external-link">guard_prompt_injection</a></span><span class="op">(</span>sensitivity <span class="op">=</span> <span class="st">"medium"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># A normal analytics question passes</span></span>
@@ -269,18 +253,16 @@ reaches the LLM.</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Injection blocked:"</span>, <span class="op">!</span><span class="va">unsafe</span><span class="op">@</span><span class="va">pass</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Reason:"</span>, <span class="va">unsafe</span><span class="op">@</span><span class="va">reason</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<p>The guard uses pattern matching against a curated library of
-injection techniques. No API call is required; all analysis happens
-locally.</p>
+<p>The check matches the text against a list of known injection
+patterns. It runs locally and doesn’t call any API.</p>
 </div>
 <div class="section level3">
 <h3 id="code-ast-analysis-and-complexity-limits">Code: AST analysis and complexity limits<a class="anchor" aria-label="anchor" href="#code-ast-analysis-and-complexity-limits"></a>
 </h3>
-<p>Even if the input is clean, the model might generate dangerous code.
-The code guardrails parse the generated R code into an abstract syntax
-tree and check for blocked function calls, excessive complexity, and
-other structural red flags.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>A clean question can still produce dangerous code. The code
+guardrails parse the generated R code and look for blocked function
+calls and code that is too deeply nested or too long.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">code_guard</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_code_analysis.html" class="external-link">guard_code_analysis</a></span><span class="op">(</span></span>
 <span>  blocked_functions <span class="op">=</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/default_blocked_functions.html" class="external-link">default_blocked_functions</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -305,16 +287,18 @@ other structural red flags.</p>
 <div class="section level3">
 <h3 id="output-redacting-pii-and-secrets">Output: redacting PII and secrets<a class="anchor" aria-label="anchor" href="#output-redacting-pii-and-secrets"></a>
 </h3>
-<p>The third layer scans the agent’s response before it reaches the
-user. Even if the dataset contains social security numbers or API keys,
-the output guardrails can redact them.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p>The output check looks at the agent’s answer before the user sees it.
+If the data had social security numbers or API keys in it, the output
+guardrails can redact them. In <code>"redact"</code> mode the check
+passes and hands back the cleaned text, so look at
+<code>details$matches</code> to see what was found.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pii_guard</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_output_pii.html" class="external-link">guard_output_pii</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"redact"</span><span class="op">)</span></span>
 <span><span class="va">pii_result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/run_guardrail.html" class="external-link">run_guardrail</a></span><span class="op">(</span></span>
 <span>  <span class="va">pii_guard</span>,</span>
 <span>  <span class="st">"The top earner is John Smith (john.smith@example.com), income $120,000"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PII detected:"</span>, <span class="op">!</span><span class="va">pii_result</span><span class="op">@</span><span class="va">pass</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PII detected:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">pii_result</span><span class="op">@</span><span class="va">details</span><span class="op">$</span><span class="va">matches</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Redacted:"</span>, <span class="va">pii_result</span><span class="op">@</span><span class="va">details</span><span class="op">$</span><span class="va">redacted_text</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">secret_guard</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_output_secrets.html" class="external-link">guard_output_secrets</a></span><span class="op">(</span>action <span class="op">=</span> <span class="st">"redact"</span><span class="op">)</span></span>
@@ -322,25 +306,24 @@ the output guardrails can redact them.</p>
 <span>  <span class="va">secret_guard</span>,</span>
 <span>  <span class="st">"Connection string: AKIAIOSFODNN7EXAMPLE"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Secret detected:"</span>, <span class="op">!</span><span class="va">secret_result</span><span class="op">@</span><span class="va">pass</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Secret detected:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">secret_result</span><span class="op">@</span><span class="va">details</span><span class="op">$</span><span class="va">matches</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Redacted:"</span>, <span class="va">secret_result</span><span class="op">@</span><span class="va">details</span><span class="op">$</span><span class="va">redacted_text</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
-<p>For adversaries who try to smuggle credentials past pattern matchers
-using base64 encoding or other obfuscation,
-<code><a href="https://ian-flores.github.io/secureguard/reference/detect_secrets_decoded.html" class="external-link">detect_secrets_decoded()</a></code> decodes and scans in a single
-pass:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<p>Someone trying to sneak a key past the patterns might base64-encode
+it. <code><a href="https://ian-flores.github.io/secureguard/reference/detect_secrets_decoded.html" class="external-link">detect_secrets_decoded()</a></code> scans the text as given, then
+tries decoding it as base64 and as a URL and scans again. It decodes the
+whole string, so pass it the encoded value on its own:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">encoded</span> <span class="op">&lt;-</span> <span class="fu">jsonlite</span><span class="fu">::</span><span class="fu"><a href="https://jeroen.r-universe.dev/jsonlite/reference/base64.html" class="external-link">base64_enc</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rawConversion.html" class="external-link">charToRaw</a></span><span class="op">(</span><span class="st">"AKIAIOSFODNN7EXAMPLE"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/detect_secrets_decoded.html" class="external-link">detect_secrets_decoded</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Encoded key:"</span>, <span class="va">encoded</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Found"</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">hits</span><span class="op">)</span>, <span class="st">"decoded secret(s)\n"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">hits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Filter</a></span><span class="op">(</span><span class="va">length</span>, <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/detect_secrets_decoded.html" class="external-link">detect_secrets_decoded</a></span><span class="op">(</span><span class="va">encoded</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Found:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">hits</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="wiring-guards-into-the-session">Wiring guards into the session<a class="anchor" aria-label="anchor" href="#wiring-guards-into-the-session"></a>
 </h3>
-<p>Code guardrails can be attached directly to a
-<code>SecureSession</code> as a pre-execute hook. The session will
-refuse to run any code that fails the check, before it ever reaches the
-child process.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<p>You can attach code guardrails to a <code>SecureSession</code> as a
+pre-execute hook. The session then refuses to run any code that fails a
+check, and the code never reaches the child process.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hook</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/as_pre_execute_hook.html" class="external-link">as_pre_execute_hook</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_code_analysis.html" class="external-link">guard_code_analysis</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_code_complexity.html" class="external-link">guard_code_complexity</a></span><span class="op">(</span>max_ast_depth <span class="op">=</span> <span class="fl">30</span>, max_calls <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
@@ -368,12 +351,11 @@ child process.</p>
 <div class="section level3">
 <h3 id="composing-into-a-pipeline">Composing into a pipeline<a class="anchor" aria-label="anchor" href="#composing-into-a-pipeline"></a>
 </h3>
-<p>For production use, bundle all three layers into a
-<code><a href="https://ian-flores.github.io/secureguard/reference/secure_pipeline.html" class="external-link">secure_pipeline()</a></code>. This exposes
-<code>$check_input()</code>, <code>$check_code()</code>,
-<code>$check_output()</code>, and <code>$as_pre_execute_hook()</code> in
-a single object.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<p><code><a href="https://ian-flores.github.io/secureguard/reference/secure_pipeline.html" class="external-link">secure_pipeline()</a></code> bundles all three kinds of check into
+one object with <code>$check_input()</code>, <code>$check_code()</code>,
+<code>$check_output()</code>, and <code>$as_pre_execute_hook()</code>
+methods.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pipeline</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/secure_pipeline.html" class="external-link">secure_pipeline</a></span><span class="op">(</span></span>
 <span>  input_guardrails <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    <span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_prompt_injection.html" class="external-link">guard_prompt_injection</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -404,15 +386,16 @@ a single object.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="layer-3-guarded-tools-securetools-secureguard">Layer 3: guarded tools (securetools + secureguard)<a class="anchor" aria-label="anchor" href="#layer-3-guarded-tools-securetools-secureguard"></a>
+<h2 id="step-3-put-the-checks-on-the-tools-securetools-and-secureguard">Step 3: put the checks on the tools (securetools and
+secureguard)<a class="anchor" aria-label="anchor" href="#step-3-put-the-checks-on-the-tools-securetools-and-secureguard"></a>
 </h2>
-<p>The pre-execute hook guards code before it enters the sandbox.
-<code><a href="../reference/guarded_tool.html">guarded_tool()</a></code> moves the defense one level deeper: it wraps
-an individual tool so that every invocation, no matter what code path
-triggered it, runs through input and output guards. The returned object
-is itself a <code>securer_tool</code> (same schema, same IPC contract),
-so it drops into any session or pool unchanged.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<p>The pre-execute hook checks code before it runs.
+<code><a href="../reference/guarded_tool.html">guarded_tool()</a></code> puts checks on a single tool instead, so
+every call to that tool runs through them, whatever code made the call.
+It checks the arguments before the tool runs and the result afterwards.
+What you get back is still a <code>securer_tool</code>, so it works in
+any session or pool.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">guarded_calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/guarded_tool.html">guarded_tool</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  input_guards  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/secureguard/reference/guard_prompt_injection.html" class="external-link">guard_prompt_injection</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -437,14 +420,14 @@ so it drops into any session or pool unchanged.</p>
 <span><span class="va">sess</span><span class="op">$</span><span class="fu">close</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="full-workflow-the-governed-analyst">Full workflow: the governed analyst<a class="anchor" aria-label="anchor" href="#full-workflow-the-governed-analyst"></a>
+<h2 id="the-whole-agent">The whole agent<a class="anchor" aria-label="anchor" href="#the-whole-agent"></a>
 </h2>
-<p>Here is the complete data analyst agent, wiring all three packages
-together. In production you would replace <code>mock_llm()</code> with
+<p>Here is the full data analyst, using all three packages. For real
+use, replace <code>mock_llm()</code> with
 <code><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">ellmer::chat_anthropic()</a></code> or
 <code><a href="https://ellmer.tidyverse.org/reference/chat_openai.html" class="external-link">ellmer::chat_openai()</a></code> and set
 <code>sandbox = TRUE</code>.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># ── 0. The mock LLM ───────────────────────────────────────────────</span></span>
 <span><span class="co"># Stands in for chat$chat(prompt); returns R code for our question.</span></span>
 <span><span class="va">mock_llm</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">prompt</span><span class="op">)</span> <span class="op">{</span></span>
@@ -505,58 +488,50 @@ together. In production you would replace <code>mock_llm()</code> with
 <div class="section level2">
 <h2 id="what-we-built">What we built<a class="anchor" aria-label="anchor" href="#what-we-built"></a>
 </h2>
-<p>The data analyst agent touches every layer of the surviving
-stack:</p>
 <table class="table">
 <colgroup>
-<col width="21%">
-<col width="34%">
-<col width="43%">
+<col width="20%">
+<col width="31%">
+<col width="48%">
 </colgroup>
 <thead><tr class="header">
-<th>Layer</th>
-<th>Package(s)</th>
+<th>Step</th>
+<th>Package</th>
 <th>What it does</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Execution</td>
+<td>Running code</td>
 <td>securer, securetools</td>
-<td>Sandboxed child process, tool-call IPC, path allow-lists</td>
+<td>Child process, tool calls to the parent, folder limits</td>
 </tr>
 <tr class="even">
-<td>Defense</td>
+<td>Checks</td>
 <td>secureguard</td>
-<td>Input injection detection, AST code analysis, PII/secret
-redaction</td>
+<td>Prompt injection, dangerous code, personal data and secrets</td>
 </tr>
 <tr class="odd">
-<td>Composition</td>
+<td>Checked tools</td>
 <td>securetools</td>
 <td>
-<code><a href="../reference/guarded_tool.html">guarded_tool()</a></code> fuses guards onto individual tools</td>
+<code><a href="../reference/guarded_tool.html">guarded_tool()</a></code> puts checks on a single tool</td>
 </tr>
 </tbody>
 </table>
-<p>The key design principle is <strong>defense in depth</strong>. The
-sandbox limits what code can do, guardrails prevent dangerous code from
-being generated in the first place, and output filtering catches
-anything that slips through.</p>
-<p>To move from this tutorial to a production agent, you would:</p>
+<p>No single piece is enough by itself. The sandbox limits what code can
+do. The code checks stop dangerous code before it runs. The output
+checks catch what gets through anyway.</p>
+<p>To turn this into a real agent:</p>
 <ol style="list-style-type: decimal">
 <li>Replace <code>mock_llm()</code> with
 <code><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">ellmer::chat_anthropic()</a></code> or
-<code><a href="https://ellmer.tidyverse.org/reference/chat_openai.html" class="external-link">ellmer::chat_openai()</a></code>
-</li>
-<li>Set <code>sandbox = TRUE</code> on <code>SecureSession</code>
-(requires Seatbelt on macOS, bwrap on Linux)</li>
-<li>Enable observability via ellmer’s native OpenTelemetry support (see
-the <a href="https://otel.r-lib.org/" class="external-link">otel package</a>) instead of a
-bespoke tracing layer</li>
-<li>Benchmark your guardrail configuration with <a href="https://github.com/ian-flores/securebench" class="external-link">securebench</a> on
-domain-specific test cases before deploying</li>
-<li>If your agent needs retrieval-augmented context, pair it with <a href="https://ragnar.tidyverse.org/" class="external-link">ragnar</a>
-</li>
+<code><a href="https://ellmer.tidyverse.org/reference/chat_openai.html" class="external-link">ellmer::chat_openai()</a></code>.</li>
+<li>Set <code>sandbox = TRUE</code> on <code>SecureSession</code>. This
+needs Seatbelt on macOS or bubblewrap on Linux.</li>
+<li>Turn on tracing with ellmer’s OpenTelemetry support, through the <a href="https://otel.r-lib.org/" class="external-link">otel package</a>.</li>
+<li>Test your guardrail settings with <a href="https://github.com/ian-flores/securebench" class="external-link">securebench</a> on
+examples from your own domain.</li>
+<li>If the agent needs to look things up in documents, add <a href="https://ragnar.tidyverse.org/" class="external-link">ragnar</a>.</li>
 </ol>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -566,7 +541,20 @@ domain-specific test cases before deploying</li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ian Flores Siaca.</p>
+  <div class="title-block">
+<div>
+<b>Sheet</b>3 of 4
+</div>
+<div>
+<b>Quadrangle</b>securetools
+</div>
+<div>
+<b>Survey</b>Tools
+</div>
+<div>
+<b>Series</b>secure-r-dev
+</div>
+</div>
 </div>
 
 <div class="pkgdown-footer-right">
