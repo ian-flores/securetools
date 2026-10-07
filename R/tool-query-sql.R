@@ -2,29 +2,26 @@
 
 #' Create a SQL query tool
 #'
-#' Returns a [securer::securer_tool()] that queries database tables
-#' via a structured interface with parameterized queries. No raw SQL
-#' is accepted -- this makes SQL injection structurally impossible.
+#' Returns a [securer::securer_tool()] that runs a SELECT on one table.
+#' The caller names the table, the columns, and an optional filter, and the
+#' tool writes the SQL. It never accepts SQL text, so there is nothing to
+#' inject into.
 #'
-#' @param conn A DBI connection object.
-#' @param allowed_tables Character vector of table names the tool can query.
-#' @param max_rows Maximum rows returned. Default 1000.
-#' @param max_calls Maximum invocations. `NULL` means unlimited.
+#' @param conn A DBI connection.
+#' @param allowed_tables Character vector of tables the tool can query.
+#' @param max_rows The most rows a query returns. Default 1000.
+#' @param max_calls The most times the tool can be called. `NULL` means no
+#'   limit.
 #'
 #' @details
-#' Security constraints:
-#' \itemize{
-#'   \item \strong{Structured SELECT only}: The tool constructs SELECT
-#'     queries from structured arguments. No raw SQL is accepted, making
-#'     SQL injection structurally impossible.
-#'   \item \strong{Parameterized filters}: Filter values are passed as
-#'     query parameters, never interpolated into SQL strings.
-#'   \item \strong{Identifier quoting}: Table and column names are quoted
-#'     with [DBI::dbQuoteIdentifier()] after passing allow-list validation,
-#'     providing defense in depth.
-#'   \item \strong{Table allow-list}: Only tables listed in `allowed_tables`
-#'     can be queried.
-#' }
+#' The table must be one of `allowed_tables`. Column names aren't checked
+#' against a list, but they must be plain identifiers (letters, digits, and
+#' underscores, not starting with a digit). Table and column names are also
+#' quoted with [DBI::dbQuoteIdentifier()].
+#'
+#' The filter is a single `column = value` condition. The value is passed
+#' as a query parameter and is never pasted into the SQL. Every query ends
+#' with `LIMIT max_rows`.
 #'
 #' @return A `securer_tool` object.
 #'

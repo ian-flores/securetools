@@ -98,43 +98,57 @@
 
 #' Create a plot rendering tool
 #'
-#' Returns a [securer::securer_tool()] that evaluates R plotting code
-#' and saves the result to a file.
+#' Returns a [securer::securer_tool()] that runs base R plotting code and
+#' saves the plot to a file in the folders you allow.
 #'
-#' @param allowed_dirs Character vector of directories the tool can write to.
-#' @param default_width Default plot width in inches. Default 8.
-#' @param default_height Default plot height in inches. Default 6.
-#' @param max_file_size Maximum output file size. Default `"5MB"`.
-#' @param max_calls Maximum invocations. `NULL` means unlimited.
-#' @param default_dpi Default resolution in dots per inch for raster formats
-#'   (png, jpg). Default 150.
+#' @param allowed_dirs Character vector of folders the tool can write to.
+#' @param default_width Plot width in inches when the caller doesn't give
+#'   one. Default 8.
+#' @param default_height Plot height in inches when the caller doesn't give
+#'   one. Default 6.
+#' @param max_file_size The largest plot file the tool will write. Default
+#'   `"5MB"`.
+#' @param max_calls The most times the tool can be called. `NULL` means no
+#'   limit.
+#' @param default_dpi Resolution in dots per inch for png and jpg files.
+#'   Default 150.
 #' @return A `securer_tool` object.
 #'
 #' @details
-#' The plot tool evaluates R plotting code in a restricted environment.
-#' Before evaluation, an AST walk validates that only allowed functions are
-#' called, preventing arbitrary code execution. The following categories of
-#' functions are permitted:
+#' Before running the code, the tool parses it and checks every function
+#' call against a list of allowed functions:
 #'
 #' \itemize{
-#'   \item **Graphics**: `plot`, `lines`, `points`, `abline`, `hist`,
+#'   \item graphics: `plot`, `lines`, `points`, `abline`, `hist`,
 #'     `barplot`, `boxplot`, `curve`, `title`, `legend`, `axis`, `mtext`,
 #'     `text`, `par`, `grid`, `segments`, `arrows`, `polygon`, `rect`,
 #'     `symbols`, `pie`, `pairs`, `heatmap`, `image`, `contour`, `persp`,
 #'     `stripchart`, `dotchart`, `stars`, `sunflowerplot`, `coplot`,
 #'     `cdplot`, `fourfoldplot`, `mosaicplot`, `assocplot`,
 #'     `smoothScatter`, `spineplot`, `stem`
-#'   \item **Helpers**: mathematical functions (`sqrt`, `log`, `exp`, etc.),
-#'     string functions (`paste`, `sprintf`, etc.), and statistical
-#'     distributions (`dnorm`, `rnorm`, etc.)
-#'   \item **Data manipulation**: `data.frame`, `list`, `matrix`, `lapply`,
-#'     `sapply`, `subset`, `with`, and others
-#'   \item **Operators**: arithmetic, comparison, and logical operators
-#'   \item **Flow control**: `if`, `for`, `while`, `{`, assignment
+#'   \item helpers: math functions (`sqrt`, `log`, `exp`, and so on),
+#'     string functions (`paste`, `sprintf`, and so on), and distributions
+#'     (`dnorm`, `rnorm`, and so on)
+#'   \item data: `data.frame`, `list`, `matrix`, `lapply`, `sapply`,
+#'     `subset`, `with`, and others
+#'   \item arithmetic, comparison, and logical operators
+#'   \item `if`, `for`, `while`, `{`, and assignment
 #' }
 #'
-#' Supported output formats: png, pdf, svg, jpg/jpeg. The format is
-#' auto-detected from the file extension by default.
+#' The code then runs in a new environment whose parent is the base
+#' environment. Because of that, only `plot()` currently works: functions
+#' from \pkg{graphics} such as `hist()`, `lines()`, and `barplot()` are on
+#' the list but aren't found when the code runs.
+#'
+#' This check does not stop arbitrary code yet. `do.call()` is on the list
+#' and takes the function name as a string, so
+#' `do.call("system", list("ls"))` gets through. Only give this tool to
+#' code that runs in a sandboxed session.
+#'
+#' The tool writes png, pdf, svg, and jpg files, and picks the format from
+#' the file extension unless the caller passes `format`. The plot is drawn
+#' to a temporary file, checked against `max_file_size`, and then copied to
+#' the target path, which must be inside `allowed_dirs`.
 #'
 #' @family tool factories
 #' @seealso \code{\link[securer]{securer_tool}}

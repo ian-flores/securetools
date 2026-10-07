@@ -14,51 +14,65 @@ tool_plot(
 )
 }
 \arguments{
-\item{allowed_dirs}{Character vector of directories the tool can write to.}
+\item{allowed_dirs}{Character vector of folders the tool can write to.}
 
-\item{default_width}{Default plot width in inches. Default 8.}
+\item{default_width}{Plot width in inches when the caller doesn't give
+one. Default 8.}
 
-\item{default_height}{Default plot height in inches. Default 6.}
+\item{default_height}{Plot height in inches when the caller doesn't give
+one. Default 6.}
 
-\item{max_file_size}{Maximum output file size. Default \code{"5MB"}.}
+\item{max_file_size}{The largest plot file the tool will write. Default
+\code{"5MB"}.}
 
-\item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
+\item{max_calls}{The most times the tool can be called. \code{NULL} means no
+limit.}
 
-\item{default_dpi}{Default resolution in dots per inch for raster formats
-(png, jpg). Default 150.}
+\item{default_dpi}{Resolution in dots per inch for png and jpg files.
+Default 150.}
 }
 \value{
 A \code{securer_tool} object.
 }
 \description{
-Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that evaluates R plotting code
-and saves the result to a file.
+Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that runs base R plotting code and
+saves the plot to a file in the folders you allow.
 }
 \details{
-The plot tool evaluates R plotting code in a restricted environment.
-Before evaluation, an AST walk validates that only allowed functions are
-called, preventing arbitrary code execution. The following categories of
-functions are permitted:
+Before running the code, the tool parses it and checks every function
+call against a list of allowed functions:
 
 \itemize{
-\item \strong{Graphics}: \code{plot}, \code{lines}, \code{points}, \code{abline}, \code{hist},
+\item graphics: \code{plot}, \code{lines}, \code{points}, \code{abline}, \code{hist},
 \code{barplot}, \code{boxplot}, \code{curve}, \code{title}, \code{legend}, \code{axis}, \code{mtext},
 \code{text}, \code{par}, \code{grid}, \code{segments}, \code{arrows}, \code{polygon}, \code{rect},
 \code{symbols}, \code{pie}, \code{pairs}, \code{heatmap}, \code{image}, \code{contour}, \code{persp},
 \code{stripchart}, \code{dotchart}, \code{stars}, \code{sunflowerplot}, \code{coplot},
 \code{cdplot}, \code{fourfoldplot}, \code{mosaicplot}, \code{assocplot},
 \code{smoothScatter}, \code{spineplot}, \code{stem}
-\item \strong{Helpers}: mathematical functions (\code{sqrt}, \code{log}, \code{exp}, etc.),
-string functions (\code{paste}, \code{sprintf}, etc.), and statistical
-distributions (\code{dnorm}, \code{rnorm}, etc.)
-\item \strong{Data manipulation}: \code{data.frame}, \code{list}, \code{matrix}, \code{lapply},
-\code{sapply}, \code{subset}, \code{with}, and others
-\item \strong{Operators}: arithmetic, comparison, and logical operators
-\item \strong{Flow control}: \code{if}, \code{for}, \code{while}, \verb{\{}, assignment
+\item helpers: math functions (\code{sqrt}, \code{log}, \code{exp}, and so on),
+string functions (\code{paste}, \code{sprintf}, and so on), and distributions
+(\code{dnorm}, \code{rnorm}, and so on)
+\item data: \code{data.frame}, \code{list}, \code{matrix}, \code{lapply}, \code{sapply},
+\code{subset}, \code{with}, and others
+\item arithmetic, comparison, and logical operators
+\item \code{if}, \code{for}, \code{while}, \verb{\{}, and assignment
 }
 
-Supported output formats: png, pdf, svg, jpg/jpeg. The format is
-auto-detected from the file extension by default.
+The code then runs in a new environment whose parent is the base
+environment. Because of that, only \code{plot()} currently works: functions
+from \pkg{graphics} such as \code{hist()}, \code{lines()}, and \code{barplot()} are on
+the list but aren't found when the code runs.
+
+This check does not stop arbitrary code yet. \code{do.call()} is on the list
+and takes the function name as a string, so
+\code{do.call("system", list("ls"))} gets through. Only give this tool to
+code that runs in a sandboxed session.
+
+The tool writes png, pdf, svg, and jpg files, and picks the format from
+the file extension unless the caller passes \code{format}. The plot is drawn
+to a temporary file, checked against \code{max_file_size}, and then copied to
+the target path, which must be inside \code{allowed_dirs}.
 }
 \examples{
 \donttest{

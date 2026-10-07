@@ -13,45 +13,46 @@ tool_fetch_url(
 )
 }
 \arguments{
-\item{allowed_domains}{Character vector of allowed domains (required). Use
-\verb{*.example.com} for wildcard subdomains matching any subdomain but not the
-bare domain itself.}
+\item{allowed_domains}{Character vector of domains the tool may contact.
+Required. \verb{*.example.com} matches any subdomain of \code{example.com} but
+not \code{example.com} itself.}
 
-\item{max_response_size}{Maximum response body size. Default \code{"1MB"}.}
+\item{max_response_size}{The largest response body the tool will
+return. Default \code{"1MB"}.}
 
-\item{timeout_secs}{Request timeout in seconds. Default 30.}
+\item{timeout_secs}{How long to wait for a response, in seconds.
+Default 30.}
 
-\item{max_calls}{Maximum lifetime invocations. \code{NULL} means unlimited.}
+\item{max_calls}{The most times the tool can be called in total. \code{NULL}
+means no limit.}
 
-\item{max_calls_per_minute}{Maximum invocations per 60-second window. Default 10.}
+\item{max_calls_per_minute}{The most calls allowed in any 60 seconds.
+Default 10.}
 }
 \value{
 A \code{securer_tool} object.
 }
 \description{
-Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that fetches content from URLs
-via HTTP GET/HEAD with domain allow-lists and rate limiting.
+Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that makes GET and HEAD requests to
+the domains you allow.
 }
 \details{
-The tool enforces several layers of security:
-\itemize{
-\item \strong{Protocol restriction}: Only \code{http} and \code{https} schemes are
-accepted. Other protocols (e.g. \verb{file://}, \verb{ftp://}) are rejected.
-\item \strong{Private IP blocking}: Hostnames that resolve to private or
-reserved IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x,
-0.0.0.0) are blocked to prevent SSRF attacks.
-\item \strong{No redirect following}: HTTP redirects are not followed,
-preventing redirect-based SSRF bypasses.
-\item \strong{Domain allow-list}: Every request is checked against the
-\code{allowed_domains} list. Wildcard entries like \verb{*.example.com} match any
-subdomain (e.g. \code{api.example.com}, \code{deep.sub.example.com}) but not the
-bare \code{example.com}.
-\item \strong{Curl-level size limit}: A \code{maxfilesize} curl option caps the
-download at \code{max_response_size} bytes, with an additional post-download
-\code{nchar} check as a backup.
-\item \strong{Rate limiting}: Both per-minute and lifetime invocation
-limits are enforced.
-}
+Only \code{http} and \code{https} URLs are accepted, and only GET and HEAD.
+The host must match \code{allowed_domains}. For example, \verb{*.example.com}
+matches \code{api.example.com} and \code{deep.sub.example.com}, but not
+\code{example.com}.
+
+The tool looks up the host's IP address once and refuses private and
+reserved addresses (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x, and
+0.0.0.0) as well as every IPv6 address. It then connects to that IP
+directly, with the original host name in the \code{Host} header, so a second
+DNS lookup can't point it somewhere else. Redirects are not followed.
+
+curl stops the download at \code{max_response_size}, and the body size is
+checked again afterwards.
+
+HTTPS requests currently fail: because the tool connects by IP address,
+the server's TLS certificate doesn't match and curl rejects it.
 }
 \examples{
 \donttest{

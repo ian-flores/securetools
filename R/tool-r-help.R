@@ -2,21 +2,20 @@
 
 #' Create an R help documentation tool
 #'
-#' Returns a [securer::securer_tool()] that looks up R function
-#' documentation from a set of allowed packages.
+#' Returns a [securer::securer_tool()] that returns R help pages as text,
+#' from the packages you allow.
 #'
-#' @param allowed_packages Character vector of packages the tool can look up
-#'   documentation from. Default includes base R packages.
-#' @param max_lines Maximum lines of help text to return. Default 100.
-#' @param max_calls Maximum invocations. `NULL` means unlimited.
+#' @param allowed_packages Character vector of packages whose help pages
+#'   the tool can return. The default is the packages that come with R:
+#'   base, stats, utils, methods, grDevices, graphics, and datasets.
+#' @param max_lines The most lines of help text to return. Default 100.
+#' @param max_calls The most times the tool can be called. `NULL` means no
+#'   limit.
 #'
 #' @details
-#' The tool restricts documentation lookup to the packages specified
-#' in `allowed_packages`. Both topic name and package name must be
-#' provided; the package must be in the allow-list.
-#'
-#' Help text is rendered as plain text via [tools::Rd2txt()] and
-#' truncated to `max_lines` lines.
+#' The caller gives a topic and a package, and the package must be in
+#' `allowed_packages`. The help page is converted to plain text with
+#' [tools::Rd2txt()] and cut off after `max_lines` lines.
 #'
 #' @return A `securer_tool` object.
 #'

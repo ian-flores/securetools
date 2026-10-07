@@ -4,13 +4,12 @@
 \name{securetools-package}
 \alias{securetools}
 \alias{securetools-package}
-\title{securetools: Security-Hardened Tool Definitions for securer}
+\title{securetools: ready-made tools with limits for securer}
 \description{
-Provides pre-built, security-hardened tool definitions for use with
-the \pkg{securer} package. Each tool factory returns a
-\code{\link[securer:securer_tool]{securer::securer_tool()}} object with built-in security constraints
-such as path validation, allow-lists, rate limiting, and parameterized
-queries.
+Ready-made tools for LLM agents that run in a \pkg{securer} session.
+Each \verb{tool_*()} function returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} with limits
+you set when you create it, such as allowed folders, allowed tables,
+allowed domains, size caps, and call limits.
 }
 \seealso{
 \code{\link[securer:securer_tool]{securer::securer_tool()}} for the underlying tool constructor.

@@ -1,10 +1,9 @@
-#' securetools: Security-Hardened Tool Definitions for securer
+#' securetools: ready-made tools with limits for securer
 #'
-#' Provides pre-built, security-hardened tool definitions for use with
-#' the \pkg{securer} package. Each tool factory returns a
-#' [securer::securer_tool()] object with built-in security constraints
-#' such as path validation, allow-lists, rate limiting, and parameterized
-#' queries.
+#' Ready-made tools for LLM agents that run in a \pkg{securer} session.
+#' Each `tool_*()` function returns a [securer::securer_tool()] with limits
+#' you set when you create it, such as allowed folders, allowed tables,
+#' allowed domains, size caps, and call limits.
 #'
 #' @seealso [securer::securer_tool()] for the underlying tool constructor.
 #' @keywords internal

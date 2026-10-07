@@ -12,27 +12,26 @@ tool_r_help(
 )
 }
 \arguments{
-\item{allowed_packages}{Character vector of packages the tool can look up
-documentation from. Default includes base R packages.}
+\item{allowed_packages}{Character vector of packages whose help pages
+the tool can return. The default is the packages that come with R:
+base, stats, utils, methods, grDevices, graphics, and datasets.}
 
-\item{max_lines}{Maximum lines of help text to return. Default 100.}
+\item{max_lines}{The most lines of help text to return. Default 100.}
 
-\item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
+\item{max_calls}{The most times the tool can be called. \code{NULL} means no
+limit.}
 }
 \value{
 A \code{securer_tool} object.
 }
 \description{
-Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that looks up R function
-documentation from a set of allowed packages.
+Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that returns R help pages as text,
+from the packages you allow.
 }
 \details{
-The tool restricts documentation lookup to the packages specified
-in \code{allowed_packages}. Both topic name and package name must be
-provided; the package must be in the allow-list.
-
-Help text is rendered as plain text via \code{\link[tools:Rd2HTML]{tools::Rd2txt()}} and
-truncated to \code{max_lines} lines.
+The caller gives a topic and a package, and the package must be in
+\code{allowed_packages}. The help page is converted to plain text with
+\code{\link[tools:Rd2HTML]{tools::Rd2txt()}} and cut off after \code{max_lines} lines.
 }
 \examples{
 \donttest{

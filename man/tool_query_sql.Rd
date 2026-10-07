@@ -7,36 +7,33 @@
 tool_query_sql(conn, allowed_tables, max_rows = 1000, max_calls = NULL)
 }
 \arguments{
-\item{conn}{A DBI connection object.}
+\item{conn}{A DBI connection.}
 
-\item{allowed_tables}{Character vector of table names the tool can query.}
+\item{allowed_tables}{Character vector of tables the tool can query.}
 
-\item{max_rows}{Maximum rows returned. Default 1000.}
+\item{max_rows}{The most rows a query returns. Default 1000.}
 
-\item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
+\item{max_calls}{The most times the tool can be called. \code{NULL} means no
+limit.}
 }
 \value{
 A \code{securer_tool} object.
 }
 \description{
-Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that queries database tables
-via a structured interface with parameterized queries. No raw SQL
-is accepted -- this makes SQL injection structurally impossible.
+Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that runs a SELECT on one table.
+The caller names the table, the columns, and an optional filter, and the
+tool writes the SQL. It never accepts SQL text, so there is nothing to
+inject into.
 }
 \details{
-Security constraints:
-\itemize{
-\item \strong{Structured SELECT only}: The tool constructs SELECT
-queries from structured arguments. No raw SQL is accepted, making
-SQL injection structurally impossible.
-\item \strong{Parameterized filters}: Filter values are passed as
-query parameters, never interpolated into SQL strings.
-\item \strong{Identifier quoting}: Table and column names are quoted
-with \code{\link[DBI:dbQuoteIdentifier]{DBI::dbQuoteIdentifier()}} after passing allow-list validation,
-providing defense in depth.
-\item \strong{Table allow-list}: Only tables listed in \code{allowed_tables}
-can be queried.
-}
+The table must be one of \code{allowed_tables}. Column names aren't checked
+against a list, but they must be plain identifiers (letters, digits, and
+underscores, not starting with a digit). Table and column names are also
+quoted with \code{\link[DBI:dbQuoteIdentifier]{DBI::dbQuoteIdentifier()}}.
+
+The filter is a single \code{column = value} condition. The value is passed
+as a query parameter and is never pasted into the SQL. Every query ends
+with \verb{LIMIT max_rows}.
 }
 \examples{
 \donttest{

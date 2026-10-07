@@ -12,45 +12,41 @@ tool_write_file(
 )
 }
 \arguments{
-\item{allowed_dirs}{Character vector of directories the tool can write to.}
+\item{allowed_dirs}{Character vector of folders the tool can write to.}
 
-\item{max_file_size}{Max output file size. Default \code{"10MB"}.}
+\item{max_file_size}{The largest file the tool will write. Default
+\code{"10MB"}.}
 
-\item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
+\item{max_calls}{The most times the tool can be called. \code{NULL} means no
+limit.}
 
-\item{overwrite}{Whether to allow overwriting existing files. Default \code{FALSE}.}
+\item{overwrite}{Whether the tool may replace a file that already
+exists. Default \code{FALSE}.}
 }
 \value{
 A \code{securer_tool} object.
 }
 \description{
-Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that writes data to files in
-specified directories with size limits and overwrite protection.
+Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that writes files into the folders
+you allow, up to a size limit, without overwriting existing files unless
+you say so.
 }
 \details{
-The \code{content} argument type is declared as \code{"list"} in the tool schema
-because the IPC serialization layer (JSON) converts most R objects to
-lists. In practice, callers should pass:
-\itemize{
-\item A \code{data.frame} for CSV and JSON formats
-\item A character vector for TXT format
-\item Any R object for RDS format
-}
+The tool writes csv, json, txt, and rds files. It picks the format from
+the file extension unless the caller passes \code{format}.
 
-Supported formats: csv, json, txt, rds. Format is auto-detected from
-the file extension, or can be specified explicitly.
+The \code{content} argument is declared as \code{"list"} in the tool schema,
+because arguments are sent between processes as JSON and most R objects
+arrive as lists. Pass a data frame for csv and json, a character vector
+for txt, and any R object for rds.
 
-Security constraints:
-\itemize{
-\item \strong{Atomic writes}: Data is written to a temp file first,
-validated for size, then moved to the target path.
-\item \strong{Overwrite protection}: By default, existing files cannot
-be overwritten (controlled by the \code{overwrite} parameter).
-\item \strong{Symlink resolution}: Target paths are resolved via
-\code{\link[base:normalizePath]{base::normalizePath()}} to prevent symlink-based directory escapes.
-\item \strong{Size limits}: Written files exceeding \code{max_file_size}
-are rejected before being moved to the target.
-}
+The target's parent folder is resolved with \code{\link[base:normalizePath]{base::normalizePath()}},
+which follows symlinks, and must be inside one of \code{allowed_dirs}. The
+data is written to a temporary file in the same folder first. If that
+file is larger than \code{max_file_size}, nothing is written to the target.
+Otherwise it is copied to the target, and the target's path is checked
+again. If it now resolves outside \code{allowed_dirs}, the file is deleted
+and the call fails.
 }
 \examples{
 \donttest{

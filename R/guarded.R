@@ -1,31 +1,29 @@
-#' Wrap a securer_tool with input and output guardrails
+#' Add secureguard checks to a tool
 #'
-#' Composes a tool from [securer::securer_tool()] with guardrails from
-#' \pkg{secureguard}. The returned object is itself a
-#' [securer::securer_tool()] (same schema, same IPC contract) whose
-#' closure runs each invocation through the supplied input guardrails,
-#' executes the underlying tool, then runs the result through the output
-#' guardrails.
+#' Wraps a [securer::securer_tool()] so that every call runs
+#' \pkg{secureguard} guardrails on the arguments before the tool runs, and
+#' on the result afterwards. The result is still a
+#' [securer::securer_tool()] with the same name, description, and
+#' arguments, so you use it the same way as the original.
 #'
-#' Guardrail failures are translated into errors raised from the tool
-#' closure; inside a securer session these surface as tool-call errors
-#' and are returned to the LLM via ellmer's `ContentToolResult(error =)`
-#' shape.
+#' If a guardrail fails, the tool raises an error. Inside a securer session
+#' that becomes a tool-call error, which ellmer passes back to the model
+#' as an error result.
 #'
-#' Guardrails are applied lazily: if \pkg{secureguard} is not installed,
-#' calling [guarded_tool()] errors with a clear installation hint rather
-#' than silently skipping enforcement.
+#' \pkg{secureguard} is only needed when you call `guarded_tool()`. If it
+#' isn't installed, `guarded_tool()` stops with an error that says how to
+#' install it. It never returns a tool without the checks.
 #'
-#' @param tool A `securer_tool` object (typically from one of the
-#'   `tool_*()` factories in this package, but any `securer_tool` works).
-#' @param input_guards A list of `secureguard` input guardrails (type
-#'   `"input"` or `"code"`). Each receives the stringified tool args and
-#'   must pass for the call to proceed.
-#' @param output_guards A list of `secureguard` output guardrails (type
-#'   `"output"`). Each receives the tool's return value (coerced to text
-#'   via `secureguard::output_to_text`) and must pass for the result to
-#'   be returned.
-#' @return A new `securer_tool` object with guardrails applied.
+#' @param tool A `securer_tool`, usually from one of the `tool_*()`
+#'   functions in this package. Any `securer_tool` works.
+#' @param input_guards A list of secureguard guardrails of type `"input"`
+#'   or `"code"`. The tool's arguments are turned into text and each
+#'   guardrail must pass before the tool runs.
+#' @param output_guards A list of secureguard guardrails of type
+#'   `"output"`. The tool's result is turned into text with
+#'   `secureguard::output_to_text()`, and each guardrail must pass before
+#'   the result is returned.
+#' @return A new `securer_tool` with the checks added.
 #' @export
 #' @examples
 #' \dontrun{
@@ -114,14 +112,14 @@ guarded_tool <- function(tool,
   )
 }
 
-#' Pipe-friendly alias for [guarded_tool()]
+#' Add secureguard checks to a tool, in a pipe
 #'
-#' Lets you write
+#' The same as [guarded_tool()], named so it reads well in a pipe:
 #' `tool_calculator() |> with_guards(input_guards = list(...))`.
 #'
 #' @param tool Same as [guarded_tool()].
-#' @param ... Passed straight through to [guarded_tool()].
-#' @return A new `securer_tool` object.
+#' @param ... Passed on to [guarded_tool()].
+#' @return A new `securer_tool` with the checks added.
 #' @export
 with_guards <- function(tool, ...) {
   guarded_tool(tool, ...)

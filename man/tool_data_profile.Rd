@@ -7,31 +7,32 @@
 tool_data_profile(max_rows = 1e+05, max_calls = NULL)
 }
 \arguments{
-\item{max_rows}{Maximum rows to profile. Larger data frames are sampled.
-Default 100000.}
+\item{max_rows}{The most rows to profile. Larger data frames are
+sampled. Default 100000.}
 
-\item{max_calls}{Maximum invocations allowed. \code{NULL} (default) means unlimited.}
+\item{max_calls}{The most times the tool can be called. \code{NULL} (the
+default) means no limit.}
 }
 \value{
 A \code{securer_tool} object.
 }
 \description{
-Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that computes summary statistics
-for a data frame.
+Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that summarizes a data frame.
 }
 \details{
-Computes per-column statistics including type, missing count, and
-unique count. For numeric and integer columns, also computes min,
-max, mean, median, and standard deviation. For character and factor
-columns, returns the top 5 most frequent values with counts.
+For every column the tool reports the type, the number of missing
+values, and the number of distinct values. Numeric columns also get the
+minimum, maximum, mean, median, and standard deviation. Character and
+factor columns get their five most common values with counts.
 
-When the input data frame exceeds \code{max_rows}, a random sample of
-\code{max_rows} rows is profiled and the result indicates that sampling
-occurred.
+If the data frame has more than \code{max_rows} rows, the tool profiles a
+random sample of \code{max_rows} rows and sets \code{sampled = TRUE} in the
+result.
 
-The \code{data} argument is declared as type \code{"list"} in the tool schema
-because the IPC serialization layer converts data frames to lists.
-The tool automatically coerces list input back to a data frame.
+The \code{data} argument is declared as \code{"list"} in the tool schema, because
+data frames sent between processes as JSON arrive as lists. The tool
+turns the list back into a data frame. Inside a \code{SecureSession}, this
+currently fails for data frames the size of \code{iris}; small ones work.
 }
 \examples{
 \donttest{

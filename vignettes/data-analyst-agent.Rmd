@@ -1,8 +1,8 @@
 ---
-title: "Building a Data Analyst Agent"
+title: "Building a data analyst agent"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Building a Data Analyst Agent}
+  %\VignetteIndexEntry{Building a data analyst agent}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -17,58 +17,53 @@ knitr::opts_chunk$set(
 
 ## The problem
 
-Large language models are excellent at generating R code. Give one a dataset
-and a question, "What is the median income by state?", and it will produce
-plausible `dplyr` pipelines on the first try. But if you
-`eval(parse(text = ...))` that code in your own R session, the model
-has full access to your file system, your network, and every secret in your
-environment variables. A single prompt injection buried in a CSV column name
-or a user's follow-up question can turn your helpful data analyst into an
-exfiltration tool.
+LLMs are good at writing R code. Give one a dataset and a question like
+"What is the median income by state?" and you'll usually get a sensible
+`dplyr` pipeline back. But if you run that code with
+`eval(parse(text = ...))` in your own R session, it can do anything you
+can: read your files, use your network, and see every secret in your
+environment variables. One prompt injection hidden in a CSV column name or
+a follow-up question is enough to turn your data analyst into something
+that sends your data elsewhere.
 
-The **secure-r-dev** packages solve this problem in layers. Each layer
-addresses a different class of threat, and they compose into a governed
-agent that is safe to point at real data:
+The secure-r-dev packages each handle one part of this problem, and you can
+use them together:
 
-```
-                 ┌─────────────┐
-                 │   securer    │  Sandboxed R execution + tool-call IPC
-                 └──────┬───────┘
-            ┌───────────┴───────────┐
-            │                       │
-     ┌──────▼───────┐        ┌──────▼──────┐
-     │ securetools   │        │ secureguard │
-     │ (hardened     │◄───────┤ (input/code/│
-     │  tools)       │ guards │  output     │
-     └───────────────┘        │  guardrails)│
-                              └─────────────┘
+```{=html}
+<figure class="hairline">
+<svg role="img" aria-label="securetools and secureguard sit on top of securer; secureguard guards securetools" viewBox="0 0 700 222" xmlns="http://www.w3.org/2000/svg"><defs>
+<marker id="st-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M1 1L9 5L1 9" fill="none" stroke="#2b1f12" stroke-width="1"/></marker>
+<pattern id="st-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+<line x1="0" y1="0" x2="0" y2="6" stroke="#bf5a36" stroke-width="0.6" opacity="0.55"/></pattern>
+</defs><rect x="40" y="30" width="260" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"/><text x="170.0" y="59.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2" >SECURETOOLS</text><text x="170.0" y="73.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4" >tools with limits built in</text><rect x="400" y="30" width="260" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"/><text x="530.0" y="59.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2" >SECUREGUARD</text><text x="530.0" y="73.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4" >checks input, code, output</text><path d="M400 62H302" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#st-arrow)"/><text x="351" y="54" font-family="Space Mono, ui-monospace, monospace" font-size="9.5" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4" >guards</text><rect x="40" y="150" width="620" height="56" fill="none" stroke="#2b1f12" stroke-width="0.75"/><text x="350.0" y="175.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2" >SECURER</text><text x="350.0" y="189.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4" >runs the agent&#8217;s code in a sandbox, with tool calls back to your session</text><path d="M170 94V148" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#st-arrow)"/><path d="M530 94V150" fill="none" stroke="#2b1f12" stroke-width="0.75" stroke-dasharray="3 3"/><text x="178" y="126" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="start" font-weight="400" letter-spacing="0.4" >imports</text><text x="538" y="126" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="start" font-weight="400" letter-spacing="0.4" >optional hook</text></svg>
+<figcaption>Fig. 1 &middot; How the three packages fit together in this example</figcaption>
+</figure>
 ```
 
-- [securer](https://github.com/ian-flores/securer) runs LLM-generated code
-  in a sandboxed child process with tool-call IPC.
-- **securetools** (this package) provides pre-built, security-hardened tool
-  factories: path-scoped file I/O, an AST-validated calculator,
-  parameterized SQL, and more.
-- [secureguard](https://github.com/ian-flores/secureguard) supplies
-  input, code, and output guardrails that catch prompt injection,
-  dangerous code, PII, and leaked secrets.
+- [securer](https://github.com/ian-flores/securer) runs the generated code
+  in a separate R process, optionally inside an OS sandbox, and lets that
+  code call tools you register.
+- securetools (this package) has the tools: file reading and writing
+  limited to set folders, a calculator that only accepts math, SQL queries
+  without raw SQL, and a few more.
+- [secureguard](https://github.com/ian-flores/secureguard) checks the
+  question, the generated code, and the output for prompt injection,
+  dangerous calls, personal data, and secrets.
 
-A fourth package, [securebench](https://github.com/ian-flores/securebench),
-measures guardrail precision/recall/F1 so you can tune your defenses with
-numbers instead of guesses; see its documentation for the evaluation
-workflow. For observability, you do not need a bespoke tracing package:
-[ellmer](https://ellmer.tidyverse.org/) ships native OpenTelemetry support,
-so traces from the LLM side of your agent flow into any OTel-compatible
-backend. For retrieval-augmented context, see
+[securebench](https://github.com/ian-flores/securebench) measures how well
+your guardrails work (precision, recall, F1), so you can tune them against
+real numbers. For tracing, use [ellmer](https://ellmer.tidyverse.org/)'s
+OpenTelemetry support, which sends traces of the LLM side of your agent to
+any OpenTelemetry backend. For retrieval (RAG), use
 [ragnar](https://ragnar.tidyverse.org/).
 
-This tutorial builds a **data analyst agent** from scratch: an agent that
-accepts natural-language questions about a dataset, generates R code to
-answer them, and executes that code in a sandbox with guardrails on every
-side. Every code chunk runs without external API keys; we mock the LLM so
-you can follow along on any machine. (Chunks are not evaluated at build
-time because they spawn child R processes; copy them into a session to run
-them.)
+This tutorial builds a data analyst agent: it takes a question about a
+dataset in plain English, writes R code to answer it, and runs that code in
+a separate process with checks before and after. You don't need an API key,
+because the LLM is replaced by a stub that returns fixed code. The chunks
+aren't run when the vignette is built, since they start child R processes.
+Copy them into an R session to try them.
 
 ## Setup
 
@@ -84,29 +79,25 @@ library(securetools)
 library(secureguard)
 ```
 
-## Layer 1: safe execution (securer + securetools)
+## Step 1: run the code somewhere else (securer and securetools)
 
-A governed agent starts with isolation. When an LLM generates code, that
-code must run in a process where it cannot read `/etc/passwd`, call
-`system("curl ...")`, or modify files outside an allowed directory. In this
-stack, `securer` provides that isolation via a child R process connected
-over a Unix domain socket, optionally wrapped in an OS-level sandbox
-(macOS Seatbelt or Linux bubblewrap).
+Code the LLM writes shouldn't run in your own R session, where it could
+read `/etc/passwd`, call `system("curl ...")`, or change files anywhere.
+securer runs it in a child R process that talks to your session over a
+Unix domain socket. You can also wrap that process in an OS sandbox
+(Seatbelt on macOS, bubblewrap on Linux).
 
-Isolation is necessary but not sufficient. The agent also needs
-*capabilities*: the ability to read data files, compute expressions, and
-write results. These capabilities are exposed as **tools**: functions
-registered in the parent process that the child can invoke by name. The
-child process pauses, sends a JSON request over the socket, the parent
-executes the function with validated arguments, and sends the result back.
-The child never touches the real implementation.
+The agent still needs to do useful things, like read a data file or save a
+result. You give it those abilities as tools: functions registered in the
+parent process that the child can call by name. When the child calls one,
+it pauses and sends the arguments to the parent as JSON. The parent checks
+them, runs the function, and sends the result back. The child never runs
+the tool's code itself.
 
 ### Creating a session with tools
 
-Our data analyst needs three tools: a calculator for quick arithmetic, a
-file reader for loading datasets, and a file writer for saving results.
-securetools provides factory functions for all three, with built-in
-security constraints like path allow-lists.
+The analyst gets three tools: a calculator, a file reader, and a file
+writer. All three are limited to a temporary workspace folder.
 
 ```{r session-with-tools}
 # The analyst can only touch files in a temporary workspace
@@ -135,16 +126,17 @@ session <- SecureSession$new(
 )
 ```
 
-The `sandbox = FALSE` flag keeps this tutorial runnable everywhere. In
-production, you would set `sandbox = TRUE` to enable Seatbelt or bubblewrap.
-Even without OS sandboxing, the tool architecture means the child process
-can only perform actions you have explicitly registered.
+`sandbox = FALSE` lets this tutorial run on any machine. For real use, set
+`sandbox = TRUE` to turn on Seatbelt or bubblewrap. Without the OS sandbox,
+the child is an ordinary R process: the tools keep their limits, but code
+that skips the tools and calls `system()` directly will run. The code
+guardrails in step 2 are what stop that here.
 
 ### Executing code with tool calls
 
-Now we can run analyst-style code. The child process sees `calculator`,
-`read_file`, and `write_file` as ordinary R functions, but every call
-crosses the IPC boundary.
+Now run some analyst-style code. In the child process, `calculator`,
+`read_file`, and `write_file` look like ordinary R functions, but each call
+goes to the parent.
 
 ```{r execute-tool-call}
 result <- session$execute(sprintf('
@@ -163,18 +155,18 @@ cat(result, "\n")
 session$close()
 ```
 
-Notice how `read_file()` and `calculator()` look like regular function
-calls from the child's perspective. Behind the scenes, each one paused
-execution, serialized the arguments to JSON, sent them over the Unix
-socket, and waited for the parent to respond. If the child had tried to
-call `system()` or `readLines("/etc/passwd")`, the sandbox would block it.
+This prints `Average state population: 24646.8 (thousands)`. Each call to
+`read_file()` and `calculator()` paused the child, sent the arguments over
+the socket, and waited for the parent's answer. Had the code called
+`system()` or `readLines("/etc/passwd")` instead, the OS sandbox would
+block it when `sandbox = TRUE`. With `sandbox = FALSE`, as here, nothing
+would.
 
 ### Session pools for production
 
-In a production setting (a Shiny app or a Plumber API) you do not want to
-pay the startup cost of a new R process on every request. A
-`SecureSessionPool` pre-warms multiple sessions and dispatches work to idle
-ones.
+In a Shiny app or a Plumber API, you don't want to start a new R process
+for every request. A `SecureSessionPool` starts several sessions ahead of
+time and hands each request to one that's free.
 
 ```{r session-pool}
 pool <- SecureSessionPool$new(
@@ -193,24 +185,21 @@ cat("100/4+25 =", r2, "\n")
 pool$close()
 ```
 
-Dead sessions are automatically restarted, so the pool self-heals after
-crashes or timeouts. A complete Plumber API built on this pattern ships
-with the package; see
+If a session dies from a crash or a timeout, the pool restarts it. The
+package includes a full Plumber API built this way; see
 `system.file("examples", "plumber", package = "securetools")`.
 
-## Layer 2: three lines of defense (secureguard)
+## Step 2: check the input, code, and output (secureguard)
 
-Isolation keeps the host safe from the agent's code, but it does not
-protect the agent from malicious *input*. A prompt injection hiding in a
-user's question could convince the model to generate destructive code. The
-model's *output* might accidentally include PII or credentials found in the
-dataset. secureguard provides three composable defense layers: input
-guardrails, code guardrails, and output guardrails.
+A separate process protects your machine from the agent's code. It does
+nothing about bad input: a prompt injection in the user's question could
+get the model to write harmful code. And the answer might include personal
+data or credentials that were in the dataset. secureguard has checks for
+each of these: input guardrails, code guardrails, and output guardrails.
 
 ### Input: rejecting prompt injection
 
-The first line of defense checks the user's question before it ever
-reaches the LLM.
+The input check looks at the user's question before it goes to the LLM.
 
 ```{r input-guard}
 injection_guard <- guard_prompt_injection(sensitivity = "medium")
@@ -228,15 +217,14 @@ cat("Injection blocked:", !unsafe@pass, "\n")
 cat("Reason:", unsafe@reason, "\n")
 ```
 
-The guard uses pattern matching against a curated library of injection
-techniques. No API call is required; all analysis happens locally.
+The check matches the text against a list of known injection patterns.
+It runs locally and doesn't call any API.
 
 ### Code: AST analysis and complexity limits
 
-Even if the input is clean, the model might generate dangerous code. The
-code guardrails parse the generated R code into an abstract syntax tree
-and check for blocked function calls, excessive complexity, and other
-structural red flags.
+A clean question can still produce dangerous code. The code guardrails
+parse the generated R code and look for blocked function calls and code
+that is too deeply nested or too long.
 
 ```{r code-guard}
 code_guard <- guard_code_analysis(
@@ -263,9 +251,11 @@ cat("Simple code passes complexity check:", simple@pass, "\n")
 
 ### Output: redacting PII and secrets
 
-The third layer scans the agent's response before it reaches the user.
-Even if the dataset contains social security numbers or API keys, the
-output guardrails can redact them.
+The output check looks at the agent's answer before the user sees it. If
+the data had social security numbers or API keys in it, the output
+guardrails can redact them. In `"redact"` mode the check passes and hands
+back the cleaned text, so look at `details$matches` to see what was
+found.
 
 ```{r output-guard}
 pii_guard <- guard_output_pii(action = "redact")
@@ -273,7 +263,7 @@ pii_result <- run_guardrail(
   pii_guard,
   "The top earner is John Smith (john.smith@example.com), income $120,000"
 )
-cat("PII detected:", !pii_result@pass, "\n")
+cat("PII detected:", length(pii_result@details$matches) > 0, "\n")
 cat("Redacted:", pii_result@details$redacted_text, "\n")
 
 secret_guard <- guard_output_secrets(action = "redact")
@@ -281,25 +271,26 @@ secret_result <- run_guardrail(
   secret_guard,
   "Connection string: AKIAIOSFODNN7EXAMPLE"
 )
-cat("Secret detected:", !secret_result@pass, "\n")
+cat("Secret detected:", length(secret_result@details$matches) > 0, "\n")
 cat("Redacted:", secret_result@details$redacted_text, "\n")
 ```
 
-For adversaries who try to smuggle credentials past pattern matchers using
-base64 encoding or other obfuscation, `detect_secrets_decoded()` decodes
-and scans in a single pass:
+Someone trying to sneak a key past the patterns might base64-encode it.
+`detect_secrets_decoded()` scans the text as given, then tries decoding it
+as base64 and as a URL and scans again. It decodes the whole string, so
+pass it the encoded value on its own:
 
 ```{r detect-encoded-secrets}
 encoded <- jsonlite::base64_enc(charToRaw("AKIAIOSFODNN7EXAMPLE"))
-hits <- detect_secrets_decoded(paste("Encoded key:", encoded))
-cat("Found", length(hits), "decoded secret(s)\n")
+hits <- Filter(length, detect_secrets_decoded(encoded))
+cat("Found:", names(hits), "\n")
 ```
 
 ### Wiring guards into the session
 
-Code guardrails can be attached directly to a `SecureSession` as a
-pre-execute hook. The session will refuse to run any code that fails the
-check, before it ever reaches the child process.
+You can attach code guardrails to a `SecureSession` as a pre-execute hook.
+The session then refuses to run any code that fails a check, and the code
+never reaches the child process.
 
 ```{r pre-execute-hook}
 hook <- as_pre_execute_hook(
@@ -329,9 +320,9 @@ guarded_session$close()
 
 ### Composing into a pipeline
 
-For production use, bundle all three layers into a `secure_pipeline()`.
-This exposes `$check_input()`, `$check_code()`, `$check_output()`, and
-`$as_pre_execute_hook()` in a single object.
+`secure_pipeline()` bundles all three kinds of check into one object with
+`$check_input()`, `$check_code()`, `$check_output()`, and
+`$as_pre_execute_hook()` methods.
 
 ```{r secure-pipeline}
 pipeline <- secure_pipeline(
@@ -363,14 +354,13 @@ cat("Output passes after redaction:", output_ok$pass, "\n")
 cat("Cleaned:", output_ok$result, "\n")
 ```
 
-## Layer 3: guarded tools (securetools + secureguard)
+## Step 3: put the checks on the tools (securetools and secureguard)
 
-The pre-execute hook guards code before it enters the sandbox.
-`guarded_tool()` moves the defense one level deeper: it wraps an
-individual tool so that every invocation, no matter what code path
-triggered it, runs through input and output guards. The returned object
-is itself a `securer_tool` (same schema, same IPC contract), so it drops
-into any session or pool unchanged.
+The pre-execute hook checks code before it runs. `guarded_tool()` puts
+checks on a single tool instead, so every call to that tool runs through
+them, whatever code made the call. It checks the arguments before the tool
+runs and the result afterwards. What you get back is still a
+`securer_tool`, so it works in any session or pool.
 
 ```{r guarded-tool}
 guarded_calc <- guarded_tool(
@@ -397,12 +387,11 @@ tryCatch(
 sess$close()
 ```
 
-## Full workflow: the governed analyst
+## The whole agent
 
-Here is the complete data analyst agent, wiring all three packages
-together. In production you would replace `mock_llm()` with
-`ellmer::chat_anthropic()` or `ellmer::chat_openai()` and set
-`sandbox = TRUE`.
+Here is the full data analyst, using all three packages. For real use,
+replace `mock_llm()` with `ellmer::chat_anthropic()` or
+`ellmer::chat_openai()` and set `sandbox = TRUE`.
 
 ```{r full-workflow}
 # ── 0. The mock LLM ───────────────────────────────────────────────
@@ -465,29 +454,26 @@ cat("Final answer:", final_answer, "\n")
 
 ## What we built
 
-The data analyst agent touches every layer of the surviving stack:
+| Step | Package | What it does |
+|------|---------|--------------|
+| Running code | securer, securetools | Child process, tool calls to the parent, folder limits |
+| Checks | secureguard | Prompt injection, dangerous code, personal data and secrets |
+| Checked tools | securetools | `guarded_tool()` puts checks on a single tool |
 
-| Layer | Package(s) | What it does |
-|-------|-----------|--------------|
-| Execution | securer, securetools | Sandboxed child process, tool-call IPC, path allow-lists |
-| Defense | secureguard | Input injection detection, AST code analysis, PII/secret redaction |
-| Composition | securetools | `guarded_tool()` fuses guards onto individual tools |
+No single piece is enough by itself. The sandbox limits what code can do.
+The code checks stop dangerous code before it runs. The output checks
+catch what gets through anyway.
 
-The key design principle is **defense in depth**. The sandbox limits what
-code can do, guardrails prevent dangerous code from being generated in the
-first place, and output filtering catches anything that slips through.
-
-To move from this tutorial to a production agent, you would:
+To turn this into a real agent:
 
 1. Replace `mock_llm()` with `ellmer::chat_anthropic()` or
-   `ellmer::chat_openai()`
-2. Set `sandbox = TRUE` on `SecureSession` (requires Seatbelt on macOS,
-   bwrap on Linux)
-3. Enable observability via ellmer's native OpenTelemetry support
-   (see the [otel package](https://otel.r-lib.org/)) instead of a
-   bespoke tracing layer
-4. Benchmark your guardrail configuration with
-   [securebench](https://github.com/ian-flores/securebench) on
-   domain-specific test cases before deploying
-5. If your agent needs retrieval-augmented context, pair it with
-   [ragnar](https://ragnar.tidyverse.org/)
+   `ellmer::chat_openai()`.
+2. Set `sandbox = TRUE` on `SecureSession`. This needs Seatbelt on macOS
+   or bubblewrap on Linux.
+3. Turn on tracing with ellmer's OpenTelemetry support, through the
+   [otel package](https://otel.r-lib.org/).
+4. Test your guardrail settings with
+   [securebench](https://github.com/ian-flores/securebench) on examples
+   from your own domain.
+5. If the agent needs to look things up in documents, add
+   [ragnar](https://ragnar.tidyverse.org/).

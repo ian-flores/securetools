@@ -2,19 +2,19 @@
 % Please edit documentation in R/guarded.R
 \name{with_guards}
 \alias{with_guards}
-\title{Pipe-friendly alias for \code{\link[=guarded_tool]{guarded_tool()}}}
+\title{Add secureguard checks to a tool, in a pipe}
 \usage{
 with_guards(tool, ...)
 }
 \arguments{
 \item{tool}{Same as \code{\link[=guarded_tool]{guarded_tool()}}.}
 
-\item{...}{Passed straight through to \code{\link[=guarded_tool]{guarded_tool()}}.}
+\item{...}{Passed on to \code{\link[=guarded_tool]{guarded_tool()}}.}
 }
 \value{
-A new \code{securer_tool} object.
+A new \code{securer_tool} with the checks added.
 }
 \description{
-Lets you write
+The same as \code{\link[=guarded_tool]{guarded_tool()}}, named so it reads well in a pipe:
 \code{tool_calculator() |> with_guards(input_guards = list(...))}.
 }

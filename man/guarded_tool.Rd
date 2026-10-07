@@ -2,43 +2,41 @@
 % Please edit documentation in R/guarded.R
 \name{guarded_tool}
 \alias{guarded_tool}
-\title{Wrap a securer_tool with input and output guardrails}
+\title{Add secureguard checks to a tool}
 \usage{
 guarded_tool(tool, input_guards = list(), output_guards = list())
 }
 \arguments{
-\item{tool}{A \code{securer_tool} object (typically from one of the
-\verb{tool_*()} factories in this package, but any \code{securer_tool} works).}
+\item{tool}{A \code{securer_tool}, usually from one of the \verb{tool_*()}
+functions in this package. Any \code{securer_tool} works.}
 
-\item{input_guards}{A list of \code{secureguard} input guardrails (type
-\code{"input"} or \code{"code"}). Each receives the stringified tool args and
-must pass for the call to proceed.}
+\item{input_guards}{A list of secureguard guardrails of type \code{"input"}
+or \code{"code"}. The tool's arguments are turned into text and each
+guardrail must pass before the tool runs.}
 
-\item{output_guards}{A list of \code{secureguard} output guardrails (type
-\code{"output"}). Each receives the tool's return value (coerced to text
-via \code{secureguard::output_to_text}) and must pass for the result to
-be returned.}
+\item{output_guards}{A list of secureguard guardrails of type
+\code{"output"}. The tool's result is turned into text with
+\code{secureguard::output_to_text()}, and each guardrail must pass before
+the result is returned.}
 }
 \value{
-A new \code{securer_tool} object with guardrails applied.
+A new \code{securer_tool} with the checks added.
 }
 \description{
-Composes a tool from \code{\link[securer:securer_tool]{securer::securer_tool()}} with guardrails from
-\pkg{secureguard}. The returned object is itself a
-\code{\link[securer:securer_tool]{securer::securer_tool()}} (same schema, same IPC contract) whose
-closure runs each invocation through the supplied input guardrails,
-executes the underlying tool, then runs the result through the output
-guardrails.
+Wraps a \code{\link[securer:securer_tool]{securer::securer_tool()}} so that every call runs
+\pkg{secureguard} guardrails on the arguments before the tool runs, and
+on the result afterwards. The result is still a
+\code{\link[securer:securer_tool]{securer::securer_tool()}} with the same name, description, and
+arguments, so you use it the same way as the original.
 }
 \details{
-Guardrail failures are translated into errors raised from the tool
-closure; inside a securer session these surface as tool-call errors
-and are returned to the LLM via ellmer's \code{ContentToolResult(error =)}
-shape.
+If a guardrail fails, the tool raises an error. Inside a securer session
+that becomes a tool-call error, which ellmer passes back to the model
+as an error result.
 
-Guardrails are applied lazily: if \pkg{secureguard} is not installed,
-calling \code{\link[=guarded_tool]{guarded_tool()}} errors with a clear installation hint rather
-than silently skipping enforcement.
+\pkg{secureguard} is only needed when you call \code{guarded_tool()}. If it
+isn't installed, \code{guarded_tool()} stops with an error that says how to
+install it. It never returns a tool without the checks.
 }
 \examples{
 \dontrun{

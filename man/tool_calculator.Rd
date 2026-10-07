@@ -7,33 +7,34 @@
 tool_calculator(max_calls = NULL)
 }
 \arguments{
-\item{max_calls}{Maximum number of invocations allowed. \code{NULL} (default)
-means unlimited.}
+\item{max_calls}{The most times the tool can be called. \code{NULL} (the
+default) means no limit.}
 }
 \value{
 A \code{securer_tool} object.
 }
 \description{
-Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that evaluates mathematical
-expressions safely via AST validation.
+Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that evaluates a math expression.
+Anything other than arithmetic and a short list of math functions is
+rejected before it runs.
 }
 \details{
-The calculator tool evaluates mathematical expressions in a restricted
-environment. Only the following functions and operators are allowed:
+These are the only functions and operators the calculator accepts:
 
 \itemize{
-\item \strong{Arithmetic}: \code{+}, \code{-}, \code{*}, \code{/}, \code{^}, \code{\%\%}, \code{\%/\%}
-\item \strong{Math}: \code{sqrt}, \code{abs}, \code{log}, \code{log2}, \code{log10}, \code{exp},
+\item arithmetic: \code{+}, \code{-}, \code{*}, \code{/}, \code{^}, \code{\%\%}, \code{\%/\%}
+\item math: \code{sqrt}, \code{abs}, \code{log}, \code{log2}, \code{log10}, \code{exp},
 \code{ceiling}, \code{floor}, \code{round}, \code{trunc}
-\item \strong{Trigonometry}: \code{sin}, \code{cos}, \code{tan}, \code{asin}, \code{acos}, \code{atan}
-\item \strong{Aggregation}: \code{sum}, \code{mean}, \code{max}, \code{min}, \code{length}
-\item \strong{Utilities}: \code{c}, \code{pi}
+\item trigonometry: \code{sin}, \code{cos}, \code{tan}, \code{asin}, \code{acos}, \code{atan}
+\item summaries: \code{sum}, \code{mean}, \code{max}, \code{min}, \code{length}
+\item \code{c} and \code{pi}
 }
 
-Expressions are first parsed and validated via an AST walk that rejects
-any function call or symbol not on the allowlist. Evaluation then occurs
-in a minimal environment containing only the allowed functions, with
-\code{emptyenv()} as its parent to prevent access to other R functionality.
+The expression must be a single expression. It is parsed, and every
+function call and name in the parse tree is checked against the list
+above before anything is evaluated. It is then evaluated in an
+environment that holds only those functions and has \code{emptyenv()} as its
+parent, so nothing else in R is reachable.
 }
 \examples{
 \donttest{

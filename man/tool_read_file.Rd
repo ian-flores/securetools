@@ -12,40 +12,37 @@ tool_read_file(
 )
 }
 \arguments{
-\item{allowed_dirs}{Character vector of directories the tool can read from.}
+\item{allowed_dirs}{Character vector of folders the tool can read from.}
 
-\item{max_file_size}{Max file size. Default \code{"50MB"}. Accepts bytes or
-string like \code{"10MB"}.}
+\item{max_file_size}{The largest file the tool will read. Either a
+number of bytes or a string like \code{"10MB"}. Default \code{"50MB"}.}
 
-\item{max_rows}{Maximum rows for tabular formats. Default 10000.}
+\item{max_rows}{The most rows to read from csv and xlsx files. Default
+10000.}
 
-\item{max_calls}{Maximum invocations. \code{NULL} means unlimited.}
+\item{max_calls}{The most times the tool can be called. \code{NULL} means no
+limit.}
 }
 \value{
 A \code{securer_tool} object.
 }
 \description{
-Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that reads files from specified
-directories with format detection and size limits.
+Returns a \code{\link[securer:securer_tool]{securer::securer_tool()}} that reads files from the folders
+you allow, up to a size limit.
 }
 \details{
-Supported formats: csv, json, txt, xlsx, parquet, rds. Format is detected
-automatically from the file extension, or can be specified explicitly via
-the \code{format} argument.
+The tool reads csv, json, txt, xlsx, parquet, and rds files. It picks
+the format from the file extension unless the caller passes \code{format}.
 
-Security measures:
-\itemize{
-\item \strong{Path validation}: All paths are resolved via
-\code{\link[base:normalizePath]{base::normalizePath()}} and checked against \code{allowed_dirs}. Symlinks are
-resolved before the directory check, preventing symlink-based escapes.
-\item \strong{RDS sandboxing}: RDS files are deserialized in a separate
-subprocess via \pkg{callr}, isolating the main process from malicious
-objects that execute code on load.
-\item \strong{Size limits}: Files exceeding \code{max_file_size} are rejected
-before reading.
-\item \strong{Row limits}: Tabular formats (csv, xlsx) are capped at
-\code{max_rows} rows.
-}
+Every path is resolved with \code{\link[base:normalizePath]{base::normalizePath()}}, which follows
+symlinks, and must then be inside one of \code{allowed_dirs}. A symlink that
+points outside those folders is rejected.
+
+Files larger than \code{max_file_size} are rejected before they are read.
+csv and xlsx files are cut off at \code{max_rows} rows.
+
+Reading an rds file can run code stored in the object, so rds files are
+read in a separate R process with \pkg{callr}.
 }
 \examples{
 \donttest{

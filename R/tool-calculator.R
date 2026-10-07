@@ -63,30 +63,31 @@ validate_calc_ast <- function(expr) {
 
 #' Create a calculator tool
 #'
-#' Returns a [securer::securer_tool()] that evaluates mathematical
-#' expressions safely via AST validation.
+#' Returns a [securer::securer_tool()] that evaluates a math expression.
+#' Anything other than arithmetic and a short list of math functions is
+#' rejected before it runs.
 #'
-#' @param max_calls Maximum number of invocations allowed. `NULL` (default)
-#'   means unlimited.
+#' @param max_calls The most times the tool can be called. `NULL` (the
+#'   default) means no limit.
 #' @return A `securer_tool` object.
 #'
 #' @details
-#' The calculator tool evaluates mathematical expressions in a restricted
-#' environment. Only the following functions and operators are allowed:
+#' These are the only functions and operators the calculator accepts:
 #'
 #' \itemize{
-#'   \item **Arithmetic**: `+`, `-`, `*`, `/`, `^`, `%%`, `%/%`
-#'   \item **Math**: `sqrt`, `abs`, `log`, `log2`, `log10`, `exp`,
+#'   \item arithmetic: `+`, `-`, `*`, `/`, `^`, `%%`, `%/%`
+#'   \item math: `sqrt`, `abs`, `log`, `log2`, `log10`, `exp`,
 #'     `ceiling`, `floor`, `round`, `trunc`
-#'   \item **Trigonometry**: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`
-#'   \item **Aggregation**: `sum`, `mean`, `max`, `min`, `length`
-#'   \item **Utilities**: `c`, `pi`
+#'   \item trigonometry: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`
+#'   \item summaries: `sum`, `mean`, `max`, `min`, `length`
+#'   \item `c` and `pi`
 #' }
 #'
-#' Expressions are first parsed and validated via an AST walk that rejects
-#' any function call or symbol not on the allowlist. Evaluation then occurs
-#' in a minimal environment containing only the allowed functions, with
-#' `emptyenv()` as its parent to prevent access to other R functionality.
+#' The expression must be a single expression. It is parsed, and every
+#' function call and name in the parse tree is checked against the list
+#' above before anything is evaluated. It is then evaluated in an
+#' environment that holds only those functions and has `emptyenv()` as its
+#' parent, so nothing else in R is reachable.
 #'
 #' @family tool factories
 #' @seealso \code{\link[securer]{securer_tool}}
