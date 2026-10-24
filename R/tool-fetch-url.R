@@ -25,15 +25,14 @@
 #'
 #' The tool looks up the host's IP address once and refuses private and
 #' reserved addresses (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x, and
-#' 0.0.0.0) as well as every IPv6 address. It then connects to that IP
-#' directly, with the original host name in the `Host` header, so a second
-#' DNS lookup can't point it somewhere else. Redirects are not followed.
+#' 0.0.0.0) as well as every IPv6 address. It then tells curl to use that
+#' IP for the host (curl's `resolve` option), so a second DNS lookup can't
+#' point it somewhere else. The URL keeps the host name, so HTTPS
+#' certificates are checked against it as usual. Redirects are not
+#' followed.
 #'
 #' curl stops the download at `max_response_size`, and the body size is
 #' checked again afterwards.
-#'
-#' HTTPS requests currently fail: because the tool connects by IP address,
-#' the server's TLS certificate doesn't match and curl rejects it.
 #'
 #' @return A `securer_tool` object.
 #'
@@ -115,8 +114,9 @@ tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
         }
 
         # DNS rebinding prevention: resolve hostname once, validate the resolved
-        # IP, then connect directly to that IP with a Host header so the server
-        # cannot return a different address on a second lookup.
+        # IP, then tell curl to use that IP for this host (CURLOPT_RESOLVE) so
+        # the server cannot return a different address on a second lookup.
+        # The URL keeps the host name, so TLS SNI and certificate checks work.
         resolved_ip <- tryCatch(utils::nsl(domain), error = function(e) NULL)
         if (is.null(resolved_ip)) {
           cli_abort("DNS resolution failed for host: {.val {domain}}")
@@ -125,12 +125,12 @@ tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
           cli_abort("Requests to private/internal IP addresses are not allowed.")
         }
 
-        # Replace hostname with the resolved IP to pin the connection
-        pinned_url <- .pin_url_to_ip(url, parsed, resolved_ip)
-
-        # Build and execute request against the resolved IP
-        req <- httr2::request(pinned_url)
-        req <- httr2::req_headers(req, Host = domain)
+        # Build and execute request, pinned to the resolved IP
+        req <- httr2::request(url)
+        req <- httr2::req_options(req, resolve = .pin_resolve(parsed, resolved_ip))
+        # A pooled connection to the same host may point at another IP, and
+        # curl would reuse it without looking at `resolve`
+        req <- httr2::req_options(req, fresh_connect = TRUE, forbid_reuse = TRUE)
         req <- httr2::req_timeout(req, seconds = timeout_secs)
         req <- httr2::req_method(req, method)
         req <- httr2::req_options(req, followlocation = FALSE)
@@ -230,16 +230,18 @@ tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
   FALSE
 }
 
-#' Replace the hostname in a URL with a resolved IP address
+#' Build a curl resolve entry that pins a host to an IP address
 #'
-#' @param url Character(1). The original URL string.
 #' @param parsed List returned by `httr2::url_parse()`.
-#' @param ip Character(1). The resolved IP to substitute.
-#' @return Character(1). The URL with hostname replaced by the IP.
+#' @param ip Character(1). The resolved IP to connect to.
+#' @return Character(1). A `"host:port:ip"` entry for `CURLOPT_RESOLVE`.
 #' @noRd
-.pin_url_to_ip <- function(url, parsed, ip) {
-  parsed$hostname <- ip
-  httr2::url_build(parsed)
+.pin_resolve <- function(parsed, ip) {
+  port <- parsed$port
+  if (is.null(port) || is.na(port) || !nzchar(port)) {
+    port <- if (identical(tolower(parsed$scheme), "https")) 443L else 80L
+  }
+  paste0(parsed$hostname, ":", port, ":", ip)
 }
 
 #' Check if a domain matches an allow-list entry

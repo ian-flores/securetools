@@ -230,13 +230,58 @@ test_that(".is_ip_private correctly classifies IPs without DNS resolution", {
   expect_false(securetools:::.is_ip_private("93.184.216.34"))
 })
 
-test_that(".pin_url_to_ip replaces hostname with IP", {
+test_that(".pin_resolve builds a curl resolve entry with the default port", {
   skip_if_not_installed("httr2")
-  url <- "https://example.com/path?q=1"
-  parsed <- httr2::url_parse(url)
-  pinned <- securetools:::.pin_url_to_ip(url, parsed, "93.184.216.34")
-  reparsed <- httr2::url_parse(pinned)
-  expect_equal(reparsed$hostname, "93.184.216.34")
-  expect_equal(reparsed$path, "/path")
-  expect_equal(reparsed$scheme, "https")
+  https <- httr2::url_parse("https://example.com/path?q=1")
+  http <- httr2::url_parse("http://example.com/path")
+  custom <- httr2::url_parse("https://example.com:8443/path")
+  expect_equal(securetools:::.pin_resolve(https, "93.184.216.34"), "example.com:443:93.184.216.34")
+  expect_equal(securetools:::.pin_resolve(http, "93.184.216.34"), "example.com:80:93.184.216.34")
+  expect_equal(securetools:::.pin_resolve(custom, "93.184.216.34"), "example.com:8443:93.184.216.34")
+})
+
+test_that("fetch_url keeps the hostname in the URL and pins it with resolve", {
+  skip_if_not_installed("httr2")
+  local_mocked_bindings(nsl = function(hostname) "93.184.216.34", .package = "utils")
+  seen <- NULL
+  local_mocked_bindings(
+    req_perform = function(req, ...) {
+      seen <<- req
+      httr2::response(status_code = 200, body = charToRaw("ok"))
+    },
+    .package = "httr2"
+  )
+  tool <- tool_fetch_url(allowed_domains = "example.com")
+  res <- tool@fn(url = "https://example.com/path?q=1")
+
+  expect_equal(res$status, 200L)
+  # TLS needs the real host name in the URL for SNI and certificate checks
+  expect_equal(seen$url, "https://example.com/path?q=1")
+  expect_equal(seen$options$resolve, "example.com:443:93.184.216.34")
+  expect_null(seen$headers$Host)
+  # Never reuse a pooled connection that may point at a different IP
+  expect_true(seen$options$fresh_connect)
+  expect_true(seen$options$forbid_reuse)
+})
+
+test_that("fetch_url connects to the pinned IP, not a fresh DNS answer", {
+  skip_if_not_installed("httr2")
+  skip_on_cran()
+  skip_if_offline()
+  # Pin example.com to an unrelated public IP. If curl did its own lookup
+  # the request would succeed; with the pin it reaches the wrong server and
+  # the TLS certificate check fails.
+  local_mocked_bindings(nsl = function(hostname) "8.8.8.8", .package = "utils")
+  tool <- tool_fetch_url(allowed_domains = "example.com", timeout_secs = 10)
+  expect_error(tool@fn(url = "https://example.com/"), "certificate|SSL|TLS")
+})
+
+test_that("fetch_url fetches a real HTTPS URL", {
+  skip_if_not_installed("httr2")
+  skip_on_cran()
+  skip_if_offline()
+  tool <- tool_fetch_url(allowed_domains = "example.com", timeout_secs = 15)
+  res <- tool@fn(url = "https://example.com/")
+  expect_equal(res$status, 200L)
+  expect_match(res$body, "Example Domain")
 })

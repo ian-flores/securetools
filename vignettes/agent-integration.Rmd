@@ -22,30 +22,31 @@ Its choices depend on everything it has read, including text an attacker
 may have planted. So any tool you give it can end up being called in ways
 you didn't plan for, and the tool itself has to enforce the limits.
 
-This vignette shows securetools inside
-[orchestr](https://github.com/ian-flores/orchestr) agents. Each `tool_*()`
-function returns a `securer::securer_tool()`, and orchestr's `agent()`
-turns it into an ellmer tool when you set `secure = TRUE`. The limits
-(allowed folders, allowed tables, call caps) come with the tool, so you
-don't write any checking code yourself.
+This vignette shows securetools inside agents built with
+[ellmer](https://ellmer.tidyverse.org/). Each `tool_*()` function returns a
+`securer::securer_tool()`. `securer::as_ellmer_tool()` starts a
+`SecureSession` with those tools and gives the model a single tool that
+runs R code in that session. The model's code can call the securetools
+functions, and the limits (allowed folders, allowed tables, call caps) come
+with each tool, so you don't write any checking code yourself.
 
-The examples cover a single agent in a ReAct loop, a supervisor with
+The examples cover a single agent in a tool loop, a supervisor with
 specialist workers, call limits, and custom tools next to the built-in
-ones. For the tools themselves, see `vignette("securetools")`. For orchestr,
-see `vignette("quickstart", package = "orchestr")`.
+ones. For the tools themselves, see `vignette("securetools")`. For tool
+calling in ellmer, see `vignette("tool-calling", package = "ellmer")`.
 
 ## Setup
 
 ```{r setup}
 library(securetools)
-library(orchestr)
+library(securer)
 library(ellmer)
 
 # Set your LLM provider API key
 Sys.setenv(ANTHROPIC_API_KEY = "your-key-here")
 ```
 
-## A ReAct agent with tools
+## An agent with tools
 
 ReAct (reason, then act) is the usual loop for an agent with tools. The
 model reads the task, decides what to do, calls a tool, looks at the
@@ -53,9 +54,10 @@ result, and repeats until it has an answer. Every turn of the loop is
 another tool call, and an agent that is confused or has been manipulated
 can keep going for a long time.
 
-With securetools, every call is checked in the parent R process before the
-tool does anything. The model can ask for whatever it likes; the tool only
-does what its limits allow.
+ellmer runs this loop for you: `chat$chat()` keeps going until the model
+answers without asking for another tool. With securetools, every call is
+checked in the parent R process before the tool does anything. The model
+can ask for whatever it likes; the tool only does what its limits allow.
 
 Here is how one turn of the loop runs:
 
@@ -71,41 +73,39 @@ Here is how one turn of the loop runs:
 </figure>
 ```
 
-Pass the tools to `agent()` with `secure = TRUE` so the agent's code runs
-in a securer session.
+Register the tools with `as_ellmer_tool()`, so the model's code runs in a
+securer session:
 
 ```{r react-basic}
 # Create security-scoped tools
 calc <- tool_calculator()
 reader <- tool_read_file(allowed_dirs = "/path/to/project/data")
 
-# Build an agent with tools and secure execution
-analyst <- agent(
-  "analyst",
-  chat = chat_anthropic(
-    system_prompt = "You are a data analyst. Use your tools to answer questions."
-  ),
-  tools = list(calc, reader),
-  secure = TRUE
+# A chat whose only tool runs R code in a SecureSession that has
+# the calculator and the file reader
+analyst <- chat_anthropic(
+  system_prompt = paste(
+    "You are a data analyst.",
+    "Write R code that calls calculator() and read_file() to answer questions."
+  )
 )
+analyst$register_tool(as_ellmer_tool(tools = list(calc, reader)))
 
-# Wrap in a ReAct graph for state management
-graph <- react_graph(analyst)
-
-result <- graph$invoke(list(messages = list(
+analyst$chat(
   "Read the file sales.csv from the data directory and calculate the total revenue."
-)))
+)
 ```
 
-With `secure = TRUE`, orchestr starts a `SecureSession` and converts each
-`securer_tool` into an ellmer tool. The path checks, the calculator's
-function list, and the call limits all run in the parent process.
+`as_ellmer_tool()` starts a `SecureSession` (sandboxed by default) and
+makes each `securer_tool` a function the model's code can call. The path
+checks, the calculator's function list, and the call limits all run in the
+parent process.
 
 ## A supervisor with specialist workers
 
 Another option is to split the tools across several agents, so each one
 has only what it needs. A supervisor agent reads the request and hands it
-to the right worker. The supervisor has no tools of its own.
+to the right worker. The supervisor has no securetools of its own.
 
 Each worker gets its own `SecureSession`, with its own allowed folders,
 allowed domains, and call limits. A file worker that gets hijacked still
@@ -126,69 +126,69 @@ worker and a tight one for the worker that writes files.
 </figure>
 ```
 
-Here is a supervisor with a data worker and a file worker:
+Each worker is its own chat. The supervisor reaches them through plain
+ellmer tools that pass a question to a worker and return its answer:
 
 ```{r supervisor}
-# Data agent: calculation and profiling
-data_agent <- agent(
-  "data_specialist",
-  chat = chat_anthropic(
-    system_prompt = paste(
-      "You are a data specialist.",
-      "Use the calculator for arithmetic and the profiler for data summaries."
-    )
-  ),
-  tools = list(
-    tool_calculator(),
-    tool_data_profile(max_rows = 50000)
-  ),
-  secure = TRUE
-)
-
-# File agent: reading and writing
-file_agent <- agent(
-  "file_specialist",
-  chat = chat_anthropic(
-    system_prompt = paste(
-      "You are a file specialist.",
-      "Read and write files as requested.",
-      "Always specify format = 'auto' when reading."
-    )
-  ),
-  tools = list(
-    tool_read_file(allowed_dirs = "/path/to/project/data"),
-    tool_write_file(allowed_dirs = "/path/to/project/output")
-  ),
-  secure = TRUE
-)
-
-# Supervisor routes between specialists
-supervisor <- agent(
-  "supervisor",
-  chat = chat_anthropic(
-    system_prompt = paste(
-      "You coordinate a team.",
-      "Route data questions to the data specialist",
-      "and file operations to the file specialist."
-    )
+# Data worker: calculation and profiling
+data_worker <- chat_anthropic(
+  system_prompt = paste(
+    "You are a data specialist.",
+    "Use the calculator for arithmetic and the profiler for data summaries."
   )
 )
-
-graph <- supervisor_graph(
-  supervisor = supervisor,
-  workers = list(
-    data_specialist = data_agent,
-    file_specialist = file_agent
-  )
-)
-
-result <- graph$invoke(list(messages = list(
-  "Read sales.csv, then calculate the mean of the revenue column."
+data_worker$register_tool(as_ellmer_tool(tools = list(
+  tool_calculator(),
+  tool_data_profile(max_rows = 50000)
 )))
+
+# File worker: reading and writing
+file_worker <- chat_anthropic(
+  system_prompt = paste(
+    "You are a file specialist.",
+    "Read and write files as requested.",
+    "Always specify format = 'auto' when reading."
+  )
+)
+file_worker$register_tool(as_ellmer_tool(tools = list(
+  tool_read_file(allowed_dirs = "/path/to/project/data"),
+  tool_write_file(allowed_dirs = "/path/to/project/output")
+)))
+
+# One routing tool per worker
+ask_worker <- function(worker, name, description) {
+  tool(
+    function(question) worker$chat(question, echo = "none"),
+    description = description,
+    arguments = list(
+      question = type_string("The task for this worker, in full.")
+    ),
+    name = name
+  )
+}
+
+supervisor <- chat_anthropic(
+  system_prompt = paste(
+    "You coordinate a team.",
+    "Send data questions to the data specialist",
+    "and file operations to the file specialist."
+  )
+)
+supervisor$register_tool(ask_worker(
+  data_worker, "ask_data_specialist",
+  "Ask the data specialist to do calculations or profile data."
+))
+supervisor$register_tool(ask_worker(
+  file_worker, "ask_file_specialist",
+  "Ask the file specialist to read or write files."
+))
+
+supervisor$chat("Read sales.csv, then calculate the mean of the revenue column.")
 ```
 
-The supervisor routes with a `route` tool that `supervisor_graph()` adds
-for it.
+The workers keep their own chat history, so a later question to the same
+worker can build on what it did before. Each `as_ellmer_tool()` call starts
+its own session, which is what keeps the workers' tools apart.
 
 ## Call limits in agent loops
 
@@ -205,12 +205,12 @@ securetools has two kinds of limit:
   tool can be called. You might allow 1000 calls in total but only 10 a
   minute, so an external service isn't flooded.
 
-When a limit is reached, the tool raises an error. ellmer passes the error
-back to the model as the tool's result, so the agent can stop or, for
-example, summarize what it already has instead of fetching more.
+When a limit is reached, the tool raises an error. securer passes the
+error back to the model as the tool's result, so the agent can stop or,
+for example, summarize what it already has instead of fetching more.
 
 ```{r rate-limiting}
-# Cap the calculator at 50 calls per agent session
+# Cap the calculator at 50 calls for the life of the session
 calc <- tool_calculator(max_calls = 50)
 
 # URL fetch with both lifetime and per-minute limits
@@ -220,31 +220,24 @@ fetcher <- tool_fetch_url(
   max_calls_per_minute = 10
 )
 
-researcher <- agent(
-  "researcher",
-  chat = chat_anthropic(
-    system_prompt = "You fetch data from APIs and analyze results."
-  ),
-  tools = list(calc, fetcher),
-  secure = TRUE
+researcher <- chat_anthropic(
+  system_prompt = "You fetch data from APIs and analyze results."
 )
-
-graph <- react_graph(researcher)
+researcher$register_tool(as_ellmer_tool(tools = list(calc, fetcher)))
 ```
 
-`tool_fetch_url()` can't fetch HTTPS URLs at the moment (see
-`vignette("securetools")`), so this agent would get an error back from
-`https://api.github.com` until that is fixed.
+The limits belong to the tool objects, not to the chat. If you give the
+same `fetcher` to two sessions, they share its call count.
 
 ## Custom tools next to securetools
 
 Most agents need something securetools doesn't have. You can put your own
-`securer::securer_tool()` definitions in the same agent as the built-in
+`securer::securer_tool()` definitions in the same session as the built-in
 ones.
 
 ```{r custom-tool}
 # A custom tool alongside securetools
-timestamp_tool <- securer::securer_tool(
+timestamp_tool <- securer_tool(
   name = "timestamp",
   description = "Return the current UTC timestamp.",
   fn = function() {
@@ -254,24 +247,16 @@ timestamp_tool <- securer::securer_tool(
 )
 
 # Mix custom + securetools
-assistant <- agent(
-  "assistant",
-  chat = chat_anthropic(
-    system_prompt = "You help with data tasks and can check the current time."
-  ),
-  tools = list(
-    tool_calculator(),
-    tool_read_file(allowed_dirs = "/path/to/data"),
-    timestamp_tool
-  ),
-  secure = TRUE
+assistant <- chat_anthropic(
+  system_prompt = "You help with data tasks and can check the current time."
 )
-
-graph <- react_graph(assistant)
-
-result <- graph$invoke(list(messages = list(
-  "What time is it? Also, what is 2^10?"
+assistant$register_tool(as_ellmer_tool(tools = list(
+  tool_calculator(),
+  tool_read_file(allowed_dirs = "/path/to/data"),
+  timestamp_tool
 )))
+
+assistant$chat("What time is it? Also, what is 2^10?")
 ```
 
 A custom tool's `fn` runs in the parent process, like the securetools
@@ -280,5 +265,6 @@ ones. The difference is that it only has the checks you write into it.
 ## Next steps
 
 - `vignette("securetools")`: the tools and what each one checks
-- `vignette("quickstart", package = "orchestr")`: agent and graph basics
-- `vignette("ellmer-integration", package = "securer")`: connecting securer to ellmer directly
+- `vignette("tool-calling", package = "ellmer")`: tool calling in ellmer
+- `vignette("ellmer-integration", package = "securer")`: more on
+  `as_ellmer_tool()` and session options

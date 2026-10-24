@@ -53,21 +53,29 @@ call against a list of allowed functions:
 \item helpers: math functions (\code{sqrt}, \code{log}, \code{exp}, and so on),
 string functions (\code{paste}, \code{sprintf}, and so on), and distributions
 (\code{dnorm}, \code{rnorm}, and so on)
-\item data: \code{data.frame}, \code{list}, \code{matrix}, \code{lapply}, \code{sapply},
-\code{subset}, \code{with}, and others
+\item data: \code{data.frame}, \code{list}, \code{matrix}, \code{subset}, \code{with}, and
+others
 \item arithmetic, comparison, and logical operators
 \item \code{if}, \code{for}, \code{while}, \verb{\{}, and assignment
 }
 
-The code then runs in a new environment whose parent is the base
-environment. Because of that, only \code{plot()} currently works: functions
-from \pkg{graphics} such as \code{hist()}, \code{lines()}, and \code{barplot()} are on
-the list but aren't found when the code runs.
+Every call has to name one of these functions directly. The check
+rejects calls built any other way, such as \code{(f)(x)}, \code{x$f()}, \code{"f"()},
+and \code{pkg::f()}. Functions that look up other functions by name, such as
+\code{do.call()}, \code{lapply()}, and \code{Map()}, are not on the list. The \code{ties}
+argument of \code{approx()}, \code{approxfun()}, \code{spline()}, and \code{splinefun()} may
+only be \code{"ordered"}, because \pkg{stats} looks a function name given
+there up outside the plot environment.
 
-This check does not stop arbitrary code yet. \code{do.call()} is on the list
-and takes the function name as a string, so
-\code{do.call("system", list("ls"))} gets through. Only give this tool to
-code that runs in a sandboxed session.
+The code then runs in a new environment that holds only the functions on
+the list, taken from \pkg{graphics}, \pkg{grDevices}, \pkg{stats},
+\pkg{utils}, and \pkg{base}. Its parent is the empty environment, so
+code can't reach any other function or the global environment, even
+through a helper that looks names up in the caller's frame.
+
+The check is a strong filter, not a sandbox: the code runs in the R
+process that calls the tool, and a loop can still run for a long time.
+Give this tool to code that runs in a sandboxed session when you can.
 
 The tool writes png, pdf, svg, and jpg files, and picks the format from
 the file extension unless the caller passes \code{format}. The plot is drawn

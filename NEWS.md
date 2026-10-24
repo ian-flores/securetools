@@ -1,5 +1,25 @@
 # securetools (development version)
 
+## Bug fixes
+
+* `tool_plot()` could be made to run arbitrary code through indirection,
+  for example `do.call("system", ...)`, `lapply(x, system)`, `(system)()`,
+  or `x$f()`. Plot code now runs in an environment that holds only the
+  allowed functions (its parent is the empty environment), every call must
+  name an allowed function directly, `::`/`:::` are rejected, the
+  higher-order helpers (`do.call()`, `lapply()`, `Map()`, ...) are off the
+  list, and the `ties` argument of `approx()`/`spline()` and friends only
+  accepts `"ordered"`.
+* `tool_plot()` now finds functions from graphics, grDevices, and stats,
+  so `hist()`, `lines()`, `barplot()`, and formula plots work.
+* `tool_fetch_url()` works with HTTPS. The resolved IP is now pinned with
+  curl's `resolve` option instead of rewriting the URL, so TLS certificate
+  and SNI checks use the real host name. Connections are no longer reused,
+  so a pooled connection can't bypass the pin.
+* `vignette("agent-integration")` uses ellmer and `securer::as_ellmer_tool()`
+  directly instead of the archived orchestr package, which is no longer in
+  Suggests.
+
 ## Ecosystem consolidation
 
 * Absorbed content from the retired `secure-r-dev-ecosystem` and

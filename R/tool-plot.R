@@ -28,7 +28,6 @@
   "as.numeric", "as.integer", "as.character", "as.logical",
   "names", "nrow", "ncol", "dim", "NROW", "NCOL",
   "head", "tail", "subset", "with", "within", "transform",
-  "do.call", "lapply", "sapply", "vapply", "mapply", "Reduce", "Filter", "Map",
   # Operators
   "+", "-", "*", "/", "^", "%%", "%/%",
   "==", "!=", "<", ">", "<=", ">=",
@@ -40,10 +39,52 @@
   "if", "for", "while", "{", "(", "<-", "=", "[", "[[", "$"
 )
 
+# Packages whose exports may be bound into the plot evaluation environment,
+# searched in this order
+.plot_fn_pkgs <- c("graphics", "grDevices", "stats", "utils", "base")
+
+# Names that are bound for internal use by plotting functions (formula
+# methods evaluate `stats::model.frame` in the caller's environment) but
+# that user code may never mention
+.plot_internal_fns <- c("::")
+
+# stats functions that resolve their `ties` argument with match.fun() from
+# inside the stats namespace, where every base function is visible. Only
+# the literal "ordered" is accepted there.
+.plot_ties_fns <- c("approx", "approxfun", "spline", "splinefun")
+
+#' Build the environment plot code runs in
+#'
+#' The environment holds only the allowed functions and constants, and its
+#' parent is the empty environment. Any name the code looks up, directly or
+#' through a helper like `match.fun()` that searches the caller's frame,
+#' resolves here or nowhere.
+#'
+#' @return A new environment.
+#' @noRd
+.plot_eval_env <- function() {
+  fns <- new.env(parent = emptyenv())
+  for (nm in c(.plot_allowed_fns, .plot_internal_fns)) {
+    for (pkg in .plot_fn_pkgs) {
+      val <- tryCatch(
+        getExportedValue(pkg, nm),
+        error = function(e) NULL
+      )
+      if (!is.null(val)) {
+        assign(nm, val, envir = fns)
+        break
+      }
+    }
+  }
+  new.env(parent = fns)
+}
+
 #' Validate a plot AST node recursively
 #'
 #' Walks the parse tree and rejects anything outside the allowed
-#' plotting/math/data function set.
+#' plotting/math/data function set. Every call must name an allowed
+#' function directly: computed calls such as `(f)()`, `x$f()`, `"f"()`, and
+#' `pkg::f()` are rejected.
 #'
 #' @param expr A language object from `parse()`.
 #' @return `invisible(TRUE)` on success; errors otherwise.
@@ -54,31 +95,37 @@
     return(invisible(TRUE))
   }
 
-  # Symbols (variable references) are allowed
+  # Symbols (variable references) are allowed, except the namespace
+  # operators, which must never appear even as values
   if (is.symbol(expr)) {
+    nm <- as.character(expr)
+    if (nm %in% c("::", ":::")) {
+      cli_abort("Function not allowed in plot code: {.fn {nm}}")
+    }
     return(invisible(TRUE))
   }
 
   if (is.call(expr)) {
     fn <- expr[[1]]
-    # Get the function name as a string
-    fn_name <- if (is.symbol(fn)) {
-      as.character(fn)
-    } else if (is.character(fn)) {
-      fn
-    } else {
-      # For complex call expressions (e.g. pkg::fn), recurse into them
-      .validate_plot_ast(fn)
-      NULL
+    if (!is.symbol(fn)) {
+      cli_abort(c(
+        "Computed function calls are not allowed in plot code.",
+        "i" = "Call allowed functions by name, for example {.code plot(x)}."
+      ))
     }
-
-    if (!is.null(fn_name) && !fn_name %in% .plot_allowed_fns) {
+    fn_name <- as.character(fn)
+    if (!fn_name %in% .plot_allowed_fns) {
       cli_abort("Function not allowed in plot code: {.fn {fn_name}}")
+    }
+    if (fn_name %in% .plot_ties_fns) {
+      .validate_plot_ties(expr, fn_name)
     }
 
     # Recursively validate all arguments
     for (i in seq_along(expr)[-1]) {
-      .validate_plot_ast(expr[[i]])
+      if (!rlang::is_missing(expr[[i]])) {
+        .validate_plot_ast(expr[[i]])
+      }
     }
     return(invisible(TRUE))
   }
@@ -93,6 +140,29 @@
     return(invisible(TRUE))
   }
 
+  invisible(TRUE)
+}
+
+#' Check the `ties` argument of approx() and friends
+#'
+#' Matches the call against the real function (so positional and partial
+#' names are caught) and allows `ties` only as the literal `"ordered"`.
+#'
+#' @param expr The call.
+#' @param fn_name Name of the stats function being called.
+#' @return `invisible(TRUE)` on success; errors otherwise.
+#' @noRd
+.validate_plot_ties <- function(expr, fn_name) {
+  matched <- tryCatch(
+    match.call(getExportedValue("stats", fn_name), expr),
+    error = function(e) cli_abort("Invalid call to {.fn {fn_name}}: {e$message}")
+  )
+  ties <- matched$ties
+  if (!is.null(ties) && !identical(ties, "ordered")) {
+    cli_abort(
+      "The {.arg ties} argument of {.fn {fn_name}} is not allowed in plot code, except {.val ordered}."
+    )
+  }
   invisible(TRUE)
 }
 
@@ -129,21 +199,29 @@
 #'   \item helpers: math functions (`sqrt`, `log`, `exp`, and so on),
 #'     string functions (`paste`, `sprintf`, and so on), and distributions
 #'     (`dnorm`, `rnorm`, and so on)
-#'   \item data: `data.frame`, `list`, `matrix`, `lapply`, `sapply`,
-#'     `subset`, `with`, and others
+#'   \item data: `data.frame`, `list`, `matrix`, `subset`, `with`, and
+#'     others
 #'   \item arithmetic, comparison, and logical operators
 #'   \item `if`, `for`, `while`, `{`, and assignment
 #' }
 #'
-#' The code then runs in a new environment whose parent is the base
-#' environment. Because of that, only `plot()` currently works: functions
-#' from \pkg{graphics} such as `hist()`, `lines()`, and `barplot()` are on
-#' the list but aren't found when the code runs.
+#' Every call has to name one of these functions directly. The check
+#' rejects calls built any other way, such as `(f)(x)`, `x$f()`, `"f"()`,
+#' and `pkg::f()`. Functions that look up other functions by name, such as
+#' `do.call()`, `lapply()`, and `Map()`, are not on the list. The `ties`
+#' argument of `approx()`, `approxfun()`, `spline()`, and `splinefun()` may
+#' only be `"ordered"`, because \pkg{stats} looks a function name given
+#' there up outside the plot environment.
 #'
-#' This check does not stop arbitrary code yet. `do.call()` is on the list
-#' and takes the function name as a string, so
-#' `do.call("system", list("ls"))` gets through. Only give this tool to
-#' code that runs in a sandboxed session.
+#' The code then runs in a new environment that holds only the functions on
+#' the list, taken from \pkg{graphics}, \pkg{grDevices}, \pkg{stats},
+#' \pkg{utils}, and \pkg{base}. Its parent is the empty environment, so
+#' code can't reach any other function or the global environment, even
+#' through a helper that looks names up in the caller's frame.
+#'
+#' The check is a strong filter, not a sandbox: the code runs in the R
+#' process that calls the tool, and a loop can still run for a long time.
+#' Give this tool to code that runs in a sandboxed session when you can.
 #'
 #' The tool writes png, pdf, svg, and jpg files, and picks the format from
 #' the file extension unless the caller passes `format`. The plot is drawn
@@ -242,7 +320,7 @@ tool_plot <- function(allowed_dirs, default_width = 8, default_height = 6,
         )
 
         tryCatch({
-          eval(parsed, envir = new.env(parent = baseenv()))
+          eval(parsed, envir = .plot_eval_env())
           grDevices::dev.off()
         }, error = function(e) {
           tryCatch(grDevices::dev.off(), error = function(e2) NULL)
