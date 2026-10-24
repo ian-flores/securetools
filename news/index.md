@@ -2,6 +2,38 @@
 
 ## securetools (development version)
 
+### Bug fixes
+
+- [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)
+  could be made to run arbitrary code through indirection, for example
+  `do.call("system", ...)`, `lapply(x, system)`, `(system)()`, or
+  `x$f()`. Plot code now runs in an environment that holds only the
+  allowed functions (its parent is the empty environment), every call
+  must name an allowed function directly, `::`/`:::` are rejected, the
+  higher-order helpers
+  ([`do.call()`](https://rdrr.io/r/base/do.call.html),
+  [`lapply()`](https://rdrr.io/r/base/lapply.html),
+  [`Map()`](https://rdrr.io/r/base/funprog.html), …) are off the list,
+  and the `ties` argument of
+  [`approx()`](https://rdrr.io/r/stats/approxfun.html)/[`spline()`](https://rdrr.io/r/stats/splinefun.html)
+  and friends only accepts `"ordered"`.
+- [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)
+  now finds functions from graphics, grDevices, and stats, so
+  [`hist()`](https://rdrr.io/r/graphics/hist.html),
+  [`lines()`](https://rdrr.io/r/graphics/lines.html),
+  [`barplot()`](https://rdrr.io/r/graphics/barplot.html), and formula
+  plots work.
+- [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)
+  works with HTTPS. The resolved IP is now pinned with curl’s `resolve`
+  option instead of rewriting the URL, so TLS certificate and SNI checks
+  use the real host name. Connections are no longer reused, so a pooled
+  connection can’t bypass the pin.
+- [`vignette("agent-integration")`](https://ian-flores.github.io/securetools/articles/agent-integration.md)
+  uses ellmer and
+  [`securer::as_ellmer_tool()`](https://ian-flores.github.io/securer/reference/as_ellmer_tool.html)
+  directly instead of the archived orchestr package, which is no longer
+  in Suggests.
+
 ### Ecosystem consolidation
 
 - Absorbed content from the retired `secure-r-dev-ecosystem` and

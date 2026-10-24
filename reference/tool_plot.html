@@ -105,18 +105,25 @@ call against a list of allowed functions:</p>
 <li><p>helpers: math functions (<code>sqrt</code>, <code>log</code>, <code>exp</code>, and so on),
 string functions (<code>paste</code>, <code>sprintf</code>, and so on), and distributions
 (<code>dnorm</code>, <code>rnorm</code>, and so on)</p></li>
-<li><p>data: <code>data.frame</code>, <code>list</code>, <code>matrix</code>, <code>lapply</code>, <code>sapply</code>,
-<code>subset</code>, <code>with</code>, and others</p></li>
+<li><p>data: <code>data.frame</code>, <code>list</code>, <code>matrix</code>, <code>subset</code>, <code>with</code>, and
+others</p></li>
 <li><p>arithmetic, comparison, and logical operators</p></li>
 <li><p><code>if</code>, <code>for</code>, <code>while</code>, <code>{</code>, and assignment</p></li>
-</ul><p>The code then runs in a new environment whose parent is the base
-environment. Because of that, only <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> currently works: functions
-from <span class="pkg">graphics</span> such as <code><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist()</a></code>, <code><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines()</a></code>, and <code><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot()</a></code> are on
-the list but aren't found when the code runs.</p>
-<p>This check does not stop arbitrary code yet. <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code> is on the list
-and takes the function name as a string, so
-<code>do.call("system", list("ls"))</code> gets through. Only give this tool to
-code that runs in a sandboxed session.</p>
+</ul><p>Every call has to name one of these functions directly. The check
+rejects calls built any other way, such as <code>(f)(x)</code>, <code>x$f()</code>, <code>"f"()</code>,
+and <code>pkg::f()</code>. Functions that look up other functions by name, such as
+<code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code>, <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code>, and <code><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Map()</a></code>, are not on the list. The <code>ties</code>
+argument of <code><a href="https://rdrr.io/r/stats/approxfun.html" class="external-link">approx()</a></code>, <code><a href="https://rdrr.io/r/stats/approxfun.html" class="external-link">approxfun()</a></code>, <code><a href="https://rdrr.io/r/stats/splinefun.html" class="external-link">spline()</a></code>, and <code><a href="https://rdrr.io/r/stats/splinefun.html" class="external-link">splinefun()</a></code> may
+only be <code>"ordered"</code>, because <span class="pkg">stats</span> looks a function name given
+there up outside the plot environment.</p>
+<p>The code then runs in a new environment that holds only the functions on
+the list, taken from <span class="pkg">graphics</span>, <span class="pkg">grDevices</span>, <span class="pkg">stats</span>,
+<span class="pkg">utils</span>, and <span class="pkg">base</span>. Its parent is the empty environment, so
+code can't reach any other function or the global environment, even
+through a helper that looks names up in the caller's frame.</p>
+<p>The check is a strong filter, not a sandbox: the code runs in the R
+process that calls the tool, and a loop can still run for a long time.
+Give this tool to code that runs in a sandboxed session when you can.</p>
 <p>The tool writes png, pdf, svg, and jpg files, and picks the format from
 the file extension unless the caller passes <code>format</code>. The plot is drawn
 to a temporary file, checked against <code>max_file_size</code>, and then copied to
@@ -145,7 +152,7 @@ the target path, which must be inside <code>allowed_dirs</code>.</p>
 <span class="r-in"><span>  plot_code <span class="op">=</span> <span class="st">"plot(1:10, (1:10)^2, main = 'Example')"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp7c40Me/scatter.png"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp0kOAcb/scatter.png"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $size</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 27235</span>

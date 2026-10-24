@@ -29,8 +29,7 @@ land, but tests and vignettes that exercise the soft dep must skip or
 degrade gracefully (`skip_if_not_installed()`, `eval = FALSE`).
 
 Note: `securetools` emits optional OpenTelemetry spans via the CRAN
-`otel` package (with `otelsdk` used only in tests) and carries a soft
-reference to `orchestr` (agent-integration vignette). Neither blocks
+`otel` package (with `otelsdk` used only in tests). This doesn’t block
 CRAN submission of `securetools` itself, but any Suggests package
 referenced from vignettes/tests must either be on CRAN or the usage must
 degrade gracefully (`skip_if_not_installed()`, `eval = FALSE` chunks).

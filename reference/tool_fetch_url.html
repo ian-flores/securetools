@@ -95,13 +95,13 @@ matches <code>api.example.com</code> and <code>deep.sub.example.com</code>, but 
 <code>example.com</code>.</p>
 <p>The tool looks up the host's IP address once and refuses private and
 reserved addresses (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x, and
-0.0.0.0) as well as every IPv6 address. It then connects to that IP
-directly, with the original host name in the <code>Host</code> header, so a second
-DNS lookup can't point it somewhere else. Redirects are not followed.</p>
+0.0.0.0) as well as every IPv6 address. It then tells curl to use that
+IP for the host (curl's <code>resolve</code> option), so a second DNS lookup can't
+point it somewhere else. The URL keeps the host name, so HTTPS
+certificates are checked against it as usual. Redirects are not
+followed.</p>
 <p>curl stops the download at <code>max_response_size</code>, and the body size is
 checked again afterwards.</p>
-<p>HTTPS requests currently fail: because the tool connects by IP address,
-the server's TLS certificate doesn't match and curl rejects it.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

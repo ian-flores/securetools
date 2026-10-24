@@ -65,27 +65,34 @@ call against a list of allowed functions:
   functions (`paste`, `sprintf`, and so on), and distributions (`dnorm`,
   `rnorm`, and so on)
 
-- data: `data.frame`, `list`, `matrix`, `lapply`, `sapply`, `subset`,
-  `with`, and others
+- data: `data.frame`, `list`, `matrix`, `subset`, `with`, and others
 
 - arithmetic, comparison, and logical operators
 
 - `if`, `for`, `while`, `{`, and assignment
 
-The code then runs in a new environment whose parent is the base
-environment. Because of that, only
-[`plot()`](https://rdrr.io/r/graphics/plot.default.html) currently
-works: functions from graphics such as
-[`hist()`](https://rdrr.io/r/graphics/hist.html),
-[`lines()`](https://rdrr.io/r/graphics/lines.html), and
-[`barplot()`](https://rdrr.io/r/graphics/barplot.html) are on the list
-but aren't found when the code runs.
+Every call has to name one of these functions directly. The check
+rejects calls built any other way, such as `(f)(x)`, `x$f()`, `"f"()`,
+and `pkg::f()`. Functions that look up other functions by name, such as
+[`do.call()`](https://rdrr.io/r/base/do.call.html),
+[`lapply()`](https://rdrr.io/r/base/lapply.html), and
+[`Map()`](https://rdrr.io/r/base/funprog.html), are not on the list. The
+`ties` argument of [`approx()`](https://rdrr.io/r/stats/approxfun.html),
+[`approxfun()`](https://rdrr.io/r/stats/approxfun.html),
+[`spline()`](https://rdrr.io/r/stats/splinefun.html), and
+[`splinefun()`](https://rdrr.io/r/stats/splinefun.html) may only be
+`"ordered"`, because stats looks a function name given there up outside
+the plot environment.
 
-This check does not stop arbitrary code yet.
-[`do.call()`](https://rdrr.io/r/base/do.call.html) is on the list and
-takes the function name as a string, so `do.call("system", list("ls"))`
-gets through. Only give this tool to code that runs in a sandboxed
-session.
+The code then runs in a new environment that holds only the functions on
+the list, taken from graphics, grDevices, stats, utils, and base. Its
+parent is the empty environment, so code can't reach any other function
+or the global environment, even through a helper that looks names up in
+the caller's frame.
+
+The check is a strong filter, not a sandbox: the code runs in the R
+process that calls the tool, and a loop can still run for a long time.
+Give this tool to code that runs in a sandboxed session when you can.
 
 The tool writes png, pdf, svg, and jpg files, and picks the format from
 the file extension unless the caller passes `format`. The plot is drawn
@@ -116,7 +123,7 @@ plt@fn(
   plot_code = "plot(1:10, (1:10)^2, main = 'Example')"
 )
 #> $path
-#> [1] "/tmp/Rtmp7c40Me/scatter.png"
+#> [1] "/tmp/Rtmp0kOAcb/scatter.png"
 #> 
 #> $size
 #> [1] 27235

@@ -218,13 +218,10 @@ only allows GET and HEAD over HTTP or HTTPS. The host must match
 `allowed_domains`, where `*.example.com` matches any subdomain of
 `example.com` but not `example.com` itself. The tool looks up the host’s
 IP address once, refuses private and loopback addresses (and all IPv6
-addresses), and then connects to that address so a second DNS answer
-can’t send it somewhere else. It doesn’t follow redirects, and it caps
-the response size and the number of calls per minute.
-
-HTTPS requests currently fail. Connecting by IP address breaks the TLS
-certificate check, so the example below errors until that is fixed.
-Plain HTTP works.
+addresses), and then tells curl to connect to that address so a second
+DNS answer can’t send it somewhere else. The URL keeps the host name, so
+HTTPS certificates are checked as usual. It doesn’t follow redirects,
+and it caps the response size and the number of calls per minute.
 
 ``` r
 
@@ -272,18 +269,14 @@ like a plot but also runs a shell command.
 
 [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)
 parses the code first and rejects any function that isn’t on its list of
-graphics, math, and data functions. That check is weaker than it sounds;
-see the known limitations below. The plot is written to a temporary
-file, checked against `max_file_size`, and then copied to a path inside
-`allowed_dirs`.
-
-At the moment only
-[`plot()`](https://rdrr.io/r/graphics/plot.default.html) itself works.
-The code runs with only the base package visible, so functions from
-graphics such as [`hist()`](https://rdrr.io/r/graphics/hist.html),
-[`lines()`](https://rdrr.io/r/graphics/lines.html), and
-[`barplot()`](https://rdrr.io/r/graphics/barplot.html) aren’t found, and
-the example below fails until that is fixed.
+graphics, math, and data functions. Every call has to name a function on
+the list directly, so tricks like `do.call("system", ...)`, `(f)(x)`, or
+[`base::system()`](https://rdrr.io/r/base/system.html) are rejected. The
+code then runs in an environment that holds only the functions on the
+list, so even a helper that looks a function up by name can’t find
+[`system()`](https://rdrr.io/r/base/system.html). The plot is written to
+a temporary file, checked against `max_file_size`, and then copied to a
+path inside `allowed_dirs`.
 
 ``` r
 
@@ -337,7 +330,7 @@ The checks run in the parent process. Here is what each one is for:
 - Writing to the wrong place: write paths are checked the same way, and
   checked again after the file is written.
 - Running arbitrary code: the calculator and plot tools reject functions
-  that aren’t on their lists (the plot tool has a known gap, below).
+  that aren’t on their lists.
 - Reaching internal services: the URL tool only allows HTTP and HTTPS,
   allowed domains, and public IP addresses.
 - SQL injection: the agent never writes SQL, and filter values are
@@ -353,14 +346,10 @@ The checks run in the parent process. Here is what each one is for:
   the allowed folders, but the write has already happened by then.
 - Call limits live in memory. They reset when the R process restarts. If
   you need limits that last, enforce them outside R.
-- The plot tool is not safe for untrusted code yet. Its allow list
-  includes [`do.call()`](https://rdrr.io/r/base/do.call.html), and the
-  code runs with base R visible, so `do.call("system", list("ls"))` gets
-  past the check and runs. Until this is fixed, only use
+- The plot tool’s check is a filter, not a sandbox. Plot code runs in
+  your R process, and a long loop can still tie it up. Use
   [`tool_plot()`](https://ian-flores.github.io/securetools/reference/tool_plot.md)
-  inside a sandboxed session.
-- [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)
-  can’t fetch HTTPS URLs yet (see above).
+  inside a sandboxed session when the code comes from an agent.
 - Passing a data frame the size of `iris` or `mtcars` to
   `data_profile()` from inside a `SecureSession` currently fails while
   the data is sent between processes. Small data frames work, and

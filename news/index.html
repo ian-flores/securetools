@@ -37,6 +37,17 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="securetools-development-version">securetools (development version)<a class="anchor" aria-label="anchor" href="#securetools-development-version"></a></h2>
 <div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/tool_plot.html">tool_plot()</a></code> could be made to run arbitrary code through indirection, for example <code>do.call("system", ...)</code>, <code>lapply(x, system)</code>, <code>(system)()</code>, or <code>x$f()</code>. Plot code now runs in an environment that holds only the allowed functions (its parent is the empty environment), every call must name an allowed function directly, <code>::</code>/<code>:::</code> are rejected, the higher-order helpers (<code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code>, <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code>, <code><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Map()</a></code>, …) are off the list, and the <code>ties</code> argument of <code><a href="https://rdrr.io/r/stats/approxfun.html" class="external-link">approx()</a></code>/<code><a href="https://rdrr.io/r/stats/splinefun.html" class="external-link">spline()</a></code> and friends only accepts <code>"ordered"</code>.</li>
+<li>
+<code><a href="../reference/tool_plot.html">tool_plot()</a></code> now finds functions from graphics, grDevices, and stats, so <code><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist()</a></code>, <code><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines()</a></code>, <code><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot()</a></code>, and formula plots work.</li>
+<li>
+<code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code> works with HTTPS. The resolved IP is now pinned with curl’s <code>resolve</code> option instead of rewriting the URL, so TLS certificate and SNI checks use the real host name. Connections are no longer reused, so a pooled connection can’t bypass the pin.</li>
+<li>
+<code><a href="../articles/agent-integration.html">vignette("agent-integration")</a></code> uses ellmer and <code><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">securer::as_ellmer_tool()</a></code> directly instead of the archived orchestr package, which is no longer in Suggests.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="ecosystem-consolidation-development-version">Ecosystem consolidation<a class="anchor" aria-label="anchor" href="#ecosystem-consolidation-development-version"></a></h3>
 <ul><li>Absorbed content from the retired <code>secure-r-dev-ecosystem</code> and <code>secureverse</code> repositories as the ecosystem slims to four packages (securer, secureguard, securetools, securebench):
 <ul><li>New vignette <code><a href="../articles/data-analyst-agent.html">vignette("data-analyst-agent")</a></code> — the flagship “Building a Data Analyst Agent” walkthrough, pruned to the securer + secureguard + securetools chain. Tracing sections were dropped in favour of ellmer’s native OpenTelemetry support.</li>

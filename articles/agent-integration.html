@@ -73,77 +73,77 @@ arguments. Its choices depend on everything it has read, including text
 an attacker may have planted. So any tool you give it can end up being
 called in ways you didn’t plan for, and the tool itself has to enforce
 the limits.</p>
-<p>This vignette shows securetools inside <a href="https://github.com/ian-flores/orchestr" class="external-link">orchestr</a> agents. Each
+<p>This vignette shows securetools inside agents built with <a href="https://ellmer.tidyverse.org/" class="external-link">ellmer</a>. Each
 <code>tool_*()</code> function returns a
-<code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code>, and orchestr’s
-<code><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent()</a></code> turns it into an ellmer tool when you set
-<code>secure = TRUE</code>. The limits (allowed folders, allowed tables,
-call caps) come with the tool, so you don’t write any checking code
+<code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code>.
+<code><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">securer::as_ellmer_tool()</a></code> starts a
+<code>SecureSession</code> with those tools and gives the model a single
+tool that runs R code in that session. The model’s code can call the
+securetools functions, and the limits (allowed folders, allowed tables,
+call caps) come with each tool, so you don’t write any checking code
 yourself.</p>
-<p>The examples cover a single agent in a ReAct loop, a supervisor with
+<p>The examples cover a single agent in a tool loop, a supervisor with
 specialist workers, call limits, and custom tools next to the built-in
 ones. For the tools themselves, see
-<code><a href="../articles/securetools.html">vignette("securetools")</a></code>. For orchestr, see
-<code><a href="https://ian-flores.github.io/orchestr/articles/quickstart.html" class="external-link">vignette("quickstart", package = "orchestr")</a></code>.</p>
+<code><a href="../articles/securetools.html">vignette("securetools")</a></code>. For tool calling in ellmer, see
+<code><a href="https://ellmer.tidyverse.org/articles/tool-calling.html" class="external-link">vignette("tool-calling", package = "ellmer")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="setup">Setup<a class="anchor" aria-label="anchor" href="#setup"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securetools/">securetools</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/orchestr/" class="external-link">orchestr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ian-flores.github.io/securer/" class="external-link">securer</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ellmer.tidyverse.org" class="external-link">ellmer</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Set your LLM provider API key</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>ANTHROPIC_API_KEY <span class="op">=</span> <span class="st">"your-key-here"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="a-react-agent-with-tools">A ReAct agent with tools<a class="anchor" aria-label="anchor" href="#a-react-agent-with-tools"></a>
+<h2 id="an-agent-with-tools">An agent with tools<a class="anchor" aria-label="anchor" href="#an-agent-with-tools"></a>
 </h2>
 <p>ReAct (reason, then act) is the usual loop for an agent with tools.
 The model reads the task, decides what to do, calls a tool, looks at the
 result, and repeats until it has an answer. Every turn of the loop is
 another tool call, and an agent that is confused or has been manipulated
 can keep going for a long time.</p>
-<p>With securetools, every call is checked in the parent R process
-before the tool does anything. The model can ask for whatever it likes;
-the tool only does what its limits allow.</p>
+<p>ellmer runs this loop for you: <code>chat$chat()</code> keeps going
+until the model answers without asking for another tool. With
+securetools, every call is checked in the parent R process before the
+tool does anything. The model can ask for whatever it likes; the tool
+only does what its limits allow.</p>
 <p>Here is how one turn of the loop runs:</p>
-<figure class="hairline"><svg role="img" aria-label="Reason, act, validate, execute, observe, then loop until done and return the answer" viewbox="0 0 900 270" xmlns="http://www.w3.org/2000/svg"><defs><marker id="rx-arrow" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#2b1f12" stroke-width="1"></path></marker><pattern id="rx-hatch" width="6" height="6" patternunits="userSpaceOnUse" patterntransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#bf5a36" stroke-width="0.6" opacity="0.55"></line></pattern></defs><rect x="20" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="80.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">REASON</text><text x="80.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the model decides</text><text x="80.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">what to do next</text><path d="M140 144.0H176" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="178" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="238.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">ACT</text><text x="238.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">it asks for</text><text x="238.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">a tool call</text><path d="M298 144.0H334" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="336" y="102" width="150" height="84" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="411.0" y="127.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">VALIDATE</text><text x="411.0" y="141.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">rate limit</text><text x="411.0" y="154.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">allow-list</text><text x="411.0" y="167.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">path check</text><path d="M486 144.0H522" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="524" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="584.0" y="141.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">EXECUTE</text><text x="584.0" y="155.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the tool runs</text><path d="M644 144.0H680" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="682" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="742.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">OBSERVE</text><text x="742.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the result goes</text><text x="742.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">back to the model</text><path d="M742 176V250H80V178" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)" stroke-dasharray="3 3"></path><text x="411" y="244" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="2">LOOP</text><path d="M80 112V44H676" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><text x="90" y="36" font-family="Space Mono, ui-monospace, monospace" font-size="9.5" fill="#6b5638" text-anchor="start" font-weight="400" letter-spacing="0.4">done</text><rect x="678" y="24" width="200" height="40" fill="none" stroke="#bf5a36" stroke-width="0.75"></rect><text x="778.0" y="48.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#bf5a36" text-anchor="middle" font-weight="700" letter-spacing="1.2">RETURN THE ANSWER</text><path d="M20 201V206H298V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="159.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">THE MODEL</text><path d="M336 201V206H486V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="411.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">YOUR R SESSION</text><path d="M524 201V206H644V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="584.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">THE TOOL</text></svg><figcaption>Fig. 1 · One turn of the ReAct loop, with securetools checks in the middle</figcaption></figure><p>Pass the tools to <code><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent()</a></code> with
-<code>secure = TRUE</code> so the agent’s code runs in a securer
-session.</p>
+<figure class="hairline"><svg role="img" aria-label="Reason, act, validate, execute, observe, then loop until done and return the answer" viewbox="0 0 900 270" xmlns="http://www.w3.org/2000/svg"><defs><marker id="rx-arrow" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#2b1f12" stroke-width="1"></path></marker><pattern id="rx-hatch" width="6" height="6" patternunits="userSpaceOnUse" patterntransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#bf5a36" stroke-width="0.6" opacity="0.55"></line></pattern></defs><rect x="20" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="80.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">REASON</text><text x="80.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the model decides</text><text x="80.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">what to do next</text><path d="M140 144.0H176" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="178" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="238.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">ACT</text><text x="238.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">it asks for</text><text x="238.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">a tool call</text><path d="M298 144.0H334" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="336" y="102" width="150" height="84" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="411.0" y="127.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">VALIDATE</text><text x="411.0" y="141.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">rate limit</text><text x="411.0" y="154.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">allow-list</text><text x="411.0" y="167.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">path check</text><path d="M486 144.0H522" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="524" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="584.0" y="141.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">EXECUTE</text><text x="584.0" y="155.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the tool runs</text><path d="M644 144.0H680" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><rect x="682" y="112" width="120" height="64" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="742.0" y="134.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">OBSERVE</text><text x="742.0" y="148.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">the result goes</text><text x="742.0" y="161.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">back to the model</text><path d="M742 176V250H80V178" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)" stroke-dasharray="3 3"></path><text x="411" y="244" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="2">LOOP</text><path d="M80 112V44H676" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#rx-arrow)"></path><text x="90" y="36" font-family="Space Mono, ui-monospace, monospace" font-size="9.5" fill="#6b5638" text-anchor="start" font-weight="400" letter-spacing="0.4">done</text><rect x="678" y="24" width="200" height="40" fill="none" stroke="#bf5a36" stroke-width="0.75"></rect><text x="778.0" y="48.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#bf5a36" text-anchor="middle" font-weight="700" letter-spacing="1.2">RETURN THE ANSWER</text><path d="M20 201V206H298V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="159.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">THE MODEL</text><path d="M336 201V206H486V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="411.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">YOUR R SESSION</text><path d="M524 201V206H644V201" fill="none" stroke="#cdb48a" stroke-width="0.75"></path><text x="584.0" y="221" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.6">THE TOOL</text></svg><figcaption>Fig. 1 · One turn of the ReAct loop, with securetools checks in the middle</figcaption></figure><p>Register the tools with <code><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool()</a></code>, so the model’s
+code runs in a securer session:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create security-scoped tools</span></span>
 <span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">reader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Build an agent with tools and secure execution</span></span>
-<span><span class="va">analyst</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
-<span>  <span class="st">"analyst"</span>,</span>
-<span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
-<span>    system_prompt <span class="op">=</span> <span class="st">"You are a data analyst. Use your tools to answer questions."</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span>, <span class="va">reader</span><span class="op">)</span>,</span>
-<span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="co"># A chat whose only tool runs R code in a SecureSession that has</span></span>
+<span><span class="co"># the calculator and the file reader</span></span>
+<span><span class="va">analyst</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
+<span>  system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
+<span>    <span class="st">"You are a data analyst."</span>,</span>
+<span>    <span class="st">"Write R code that calls calculator() and read_file() to answer questions."</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span><span class="va">analyst</span><span class="op">$</span><span class="fu">register_tool</span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool</a></span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span>, <span class="va">reader</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Wrap in a ReAct graph for state management</span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_react.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">analyst</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span><span class="va">analyst</span><span class="op">$</span><span class="fu">chat</span><span class="op">(</span></span>
 <span>  <span class="st">"Read the file sales.csv from the data directory and calculate the total revenue."</span></span>
-<span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>With <code>secure = TRUE</code>, orchestr starts a
-<code>SecureSession</code> and converts each <code>securer_tool</code>
-into an ellmer tool. The path checks, the calculator’s function list,
-and the call limits all run in the parent process.</p>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool()</a></code> starts a <code>SecureSession</code>
+(sandboxed by default) and makes each <code>securer_tool</code> a
+function the model’s code can call. The path checks, the calculator’s
+function list, and the call limits all run in the parent process.</p>
 </div>
 <div class="section level2">
 <h2 id="a-supervisor-with-specialist-workers">A supervisor with specialist workers<a class="anchor" aria-label="anchor" href="#a-supervisor-with-specialist-workers"></a>
 </h2>
 <p>Another option is to split the tools across several agents, so each
 one has only what it needs. A supervisor agent reads the request and
-hands it to the right worker. The supervisor has no tools of its
+hands it to the right worker. The supervisor has no securetools of its
 own.</p>
 <p>Each worker gets its own <code>SecureSession</code>, with its own
 allowed folders, allowed domains, and call limits. A file worker that
@@ -152,66 +152,68 @@ that tool. The supervisor only sees the workers’ answers, not the raw
 tool output. You can also set limits per role, for example a generous
 call limit for the data worker and a tight one for the worker that
 writes files.</p>
-<figure class="hairline"><svg role="img" aria-label="A supervisor routes a request to a file worker, a data worker, or a research worker" viewbox="0 0 900 262" xmlns="http://www.w3.org/2000/svg"><defs><marker id="sv-arrow" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#2b1f12" stroke-width="1"></path></marker><pattern id="sv-hatch" width="6" height="6" patternunits="userSpaceOnUse" patterntransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#bf5a36" stroke-width="0.6" opacity="0.55"></line></pattern></defs><text x="450" y="22" font-family="Space Mono, ui-monospace, monospace" font-size="9.5" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1">“READ SALES.CSV, COMPUTE MEAN REVENUE”</text><path d="M450 30V48" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="340" y="50" width="220" height="56" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="450.0" y="68.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">SUPERVISOR</text><text x="450.0" y="82.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">routes the request</text><text x="450.0" y="95.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">has no tools of its own</text><path d="M450 106V128" fill="none" stroke="#2b1f12" stroke-width="0.75"></path><path d="M170 128H730" fill="none" stroke="#2b1f12" stroke-width="0.75"></path><path d="M170 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="52" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="60" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="170.0" y="183.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">FILE WORKER</text><text x="170.0" y="197.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">read_file</text><text x="170.0" y="210.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">write_file</text><text x="170" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text><path d="M450 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="332" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="340" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="450.0" y="183.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">DATA WORKER</text><text x="450.0" y="197.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">calculator</text><text x="450.0" y="210.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">data_profile</text><text x="450" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text><path d="M730 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="612" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="620" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="730.0" y="190.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">RESEARCH WORKER</text><text x="730.0" y="204.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">fetch_url</text><text x="730" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text></svg><figcaption>Fig. 2 · Each worker gets its own session, rate limits, and allow-lists</figcaption></figure><p>Here is a supervisor with a data worker and a file worker:</p>
+<figure class="hairline"><svg role="img" aria-label="A supervisor routes a request to a file worker, a data worker, or a research worker" viewbox="0 0 900 262" xmlns="http://www.w3.org/2000/svg"><defs><marker id="sv-arrow" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#2b1f12" stroke-width="1"></path></marker><pattern id="sv-hatch" width="6" height="6" patternunits="userSpaceOnUse" patterntransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#bf5a36" stroke-width="0.6" opacity="0.55"></line></pattern></defs><text x="450" y="22" font-family="Space Mono, ui-monospace, monospace" font-size="9.5" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1">“READ SALES.CSV, COMPUTE MEAN REVENUE”</text><path d="M450 30V48" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="340" y="50" width="220" height="56" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="450.0" y="68.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">SUPERVISOR</text><text x="450.0" y="82.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">routes the request</text><text x="450.0" y="95.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">has no tools of its own</text><path d="M450 106V128" fill="none" stroke="#2b1f12" stroke-width="0.75"></path><path d="M170 128H730" fill="none" stroke="#2b1f12" stroke-width="0.75"></path><path d="M170 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="52" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="60" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="170.0" y="183.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">FILE WORKER</text><text x="170.0" y="197.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">read_file</text><text x="170.0" y="210.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">write_file</text><text x="170" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text><path d="M450 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="332" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="340" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="450.0" y="183.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">DATA WORKER</text><text x="450.0" y="197.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">calculator</text><text x="450.0" y="210.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">data_profile</text><text x="450" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text><path d="M730 128V158" fill="none" stroke="#2b1f12" stroke-width="0.75" marker-end="url(#sv-arrow)"></path><rect x="612" y="152" width="236" height="96" fill="none" stroke="#cdb48a" stroke-width="0.75" stroke-dasharray="3 3"></rect><rect x="620" y="160" width="220" height="66" fill="none" stroke="#2b1f12" stroke-width="0.75"></rect><text x="730.0" y="190.0" font-family="Space Mono, ui-monospace, monospace" font-size="10.5" fill="#2b1f12" text-anchor="middle" font-weight="700" letter-spacing="1.2">RESEARCH WORKER</text><text x="730.0" y="204.0" font-family="Space Mono, ui-monospace, monospace" font-size="9" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="0.4">fetch_url</text><text x="730" y="240" font-family="Space Mono, ui-monospace, monospace" font-size="8" fill="#6b5638" text-anchor="middle" font-weight="400" letter-spacing="1.4">OWN SECURESESSION</text></svg><figcaption>Fig. 2 · Each worker gets its own session, rate limits, and allow-lists</figcaption></figure><p>Each worker is its own chat. The supervisor reaches them through
+plain ellmer tools that pass a question to a worker and return its
+answer:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Data agent: calculation and profiling</span></span>
-<span><span class="va">data_agent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
-<span>  <span class="st">"data_specialist"</span>,</span>
-<span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
-<span>    system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
-<span>      <span class="st">"You are a data specialist."</span>,</span>
-<span>      <span class="st">"Use the calculator for arithmetic and the profiler for data summaries."</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="../reference/tool_data_profile.html">tool_data_profile</a></span><span class="op">(</span>max_rows <span class="op">=</span> <span class="fl">50000</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># File agent: reading and writing</span></span>
-<span><span class="va">file_agent</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
-<span>  <span class="st">"file_specialist"</span>,</span>
-<span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
-<span>    system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
-<span>      <span class="st">"You are a file specialist."</span>,</span>
-<span>      <span class="st">"Read and write files as requested."</span>,</span>
-<span>      <span class="st">"Always specify format = 'auto' when reading."</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="../reference/tool_write_file.html">tool_write_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/output"</span><span class="op">)</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Supervisor routes between specialists</span></span>
-<span><span class="va">supervisor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
-<span>  <span class="st">"supervisor"</span>,</span>
-<span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
-<span>    system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
-<span>      <span class="st">"You coordinate a team."</span>,</span>
-<span>      <span class="st">"Route data questions to the data specialist"</span>,</span>
-<span>      <span class="st">"and file operations to the file specialist."</span></span>
-<span>    <span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Data worker: calculation and profiling</span></span>
+<span><span class="va">data_worker</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
+<span>  system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
+<span>    <span class="st">"You are a data specialist."</span>,</span>
+<span>    <span class="st">"Use the calculator for arithmetic and the profiler for data summaries."</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span><span class="va">data_worker</span><span class="op">$</span><span class="fu">register_tool</span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool</a></span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/tool_data_profile.html">tool_data_profile</a></span><span class="op">(</span>max_rows <span class="op">=</span> <span class="fl">50000</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_supervisor.html" class="external-link">supervisor_graph</a></span><span class="op">(</span></span>
-<span>  supervisor <span class="op">=</span> <span class="va">supervisor</span>,</span>
-<span>  workers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    data_specialist <span class="op">=</span> <span class="va">data_agent</span>,</span>
-<span>    file_specialist <span class="op">=</span> <span class="va">file_agent</span></span>
+<span><span class="co"># File worker: reading and writing</span></span>
+<span><span class="va">file_worker</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
+<span>  system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
+<span>    <span class="st">"You are a file specialist."</span>,</span>
+<span>    <span class="st">"Read and write files as requested."</span>,</span>
+<span>    <span class="st">"Always specify format = 'auto' when reading."</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
+<span><span class="va">file_worker</span><span class="op">$</span><span class="fu">register_tool</span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool</a></span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/data"</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/tool_write_file.html">tool_write_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/project/output"</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  <span class="st">"Read sales.csv, then calculate the mean of the revenue column."</span></span>
-<span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>The supervisor routes with a <code>route</code> tool that
-<code><a href="https://ian-flores.github.io/orchestr/reference/graph_supervisor.html" class="external-link">supervisor_graph()</a></code> adds for it.</p>
+<span><span class="co"># One routing tool per worker</span></span>
+<span><span class="va">ask_worker</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">worker</span>, <span class="va">name</span>, <span class="va">description</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://ellmer.tidyverse.org/reference/tool.html" class="external-link">tool</a></span><span class="op">(</span></span>
+<span>    <span class="kw">function</span><span class="op">(</span><span class="va">question</span><span class="op">)</span> <span class="va">worker</span><span class="op">$</span><span class="fu">chat</span><span class="op">(</span><span class="va">question</span>, echo <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span>,</span>
+<span>    description <span class="op">=</span> <span class="va">description</span>,</span>
+<span>    arguments <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      question <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/type_boolean.html" class="external-link">type_string</a></span><span class="op">(</span><span class="st">"The task for this worker, in full."</span><span class="op">)</span></span>
+<span>    <span class="op">)</span>,</span>
+<span>    name <span class="op">=</span> <span class="va">name</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="va">supervisor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
+<span>  system_prompt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
+<span>    <span class="st">"You coordinate a team."</span>,</span>
+<span>    <span class="st">"Send data questions to the data specialist"</span>,</span>
+<span>    <span class="st">"and file operations to the file specialist."</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">supervisor</span><span class="op">$</span><span class="fu">register_tool</span><span class="op">(</span><span class="fu">ask_worker</span><span class="op">(</span></span>
+<span>  <span class="va">data_worker</span>, <span class="st">"ask_data_specialist"</span>,</span>
+<span>  <span class="st">"Ask the data specialist to do calculations or profile data."</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">supervisor</span><span class="op">$</span><span class="fu">register_tool</span><span class="op">(</span><span class="fu">ask_worker</span><span class="op">(</span></span>
+<span>  <span class="va">file_worker</span>, <span class="st">"ask_file_specialist"</span>,</span>
+<span>  <span class="st">"Ask the file specialist to read or write files."</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">supervisor</span><span class="op">$</span><span class="fu">chat</span><span class="op">(</span><span class="st">"Read sales.csv, then calculate the mean of the revenue column."</span><span class="op">)</span></span></code></pre></div>
+<p>The workers keep their own chat history, so a later question to the
+same worker can build on what it did before. Each
+<code><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool()</a></code> call starts its own session, which is what
+keeps the workers’ tools apart.</p>
 </div>
 <div class="section level2">
 <h2 id="call-limits-in-agent-loops">Call limits in agent loops<a class="anchor" aria-label="anchor" href="#call-limits-in-agent-loops"></a>
@@ -232,11 +234,11 @@ runaway loop.</li>
 You might allow 1000 calls in total but only 10 a minute, so an external
 service isn’t flooded.</li>
 </ul>
-<p>When a limit is reached, the tool raises an error. ellmer passes the
+<p>When a limit is reached, the tool raises an error. securer passes the
 error back to the model as the tool’s result, so the agent can stop or,
 for example, summarize what it already has instead of fetching more.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Cap the calculator at 50 calls per agent session</span></span>
+<code class="sourceCode R"><span><span class="co"># Cap the calculator at 50 calls for the life of the session</span></span>
 <span><span class="va">calc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span>max_calls <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># URL fetch with both lifetime and per-minute limits</span></span>
@@ -246,30 +248,23 @@ for example, summarize what it already has instead of fetching more.</p>
 <span>  max_calls_per_minute <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">researcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
-<span>  <span class="st">"researcher"</span>,</span>
-<span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
-<span>    system_prompt <span class="op">=</span> <span class="st">"You fetch data from APIs and analyze results."</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span>, <span class="va">fetcher</span><span class="op">)</span>,</span>
-<span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="va">researcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
+<span>  system_prompt <span class="op">=</span> <span class="st">"You fetch data from APIs and analyze results."</span></span>
 <span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_react.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">researcher</span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code> can’t fetch HTTPS URLs at the moment
-(see <code><a href="../articles/securetools.html">vignette("securetools")</a></code>), so this agent would get an
-error back from <code>https://api.github.com</code> until that is
-fixed.</p>
+<span><span class="va">researcher</span><span class="op">$</span><span class="fu">register_tool</span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool</a></span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">calc</span>, <span class="va">fetcher</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>The limits belong to the tool objects, not to the chat. If you give
+the same <code>fetcher</code> to two sessions, they share its call
+count.</p>
 </div>
 <div class="section level2">
 <h2 id="custom-tools-next-to-securetools">Custom tools next to securetools<a class="anchor" aria-label="anchor" href="#custom-tools-next-to-securetools"></a>
 </h2>
 <p>Most agents need something securetools doesn’t have. You can put your
-own <code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> definitions in the same agent
+own <code><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer::securer_tool()</a></code> definitions in the same session
 as the built-in ones.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># A custom tool alongside securetools</span></span>
-<span><span class="va">timestamp_tool</span> <span class="op">&lt;-</span> <span class="fu">securer</span><span class="fu">::</span><span class="fu"><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer_tool</a></span><span class="op">(</span></span>
+<span><span class="va">timestamp_tool</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/securer/reference/securer_tool.html" class="external-link">securer_tool</a></span><span class="op">(</span></span>
 <span>  name <span class="op">=</span> <span class="st">"timestamp"</span>,</span>
 <span>  description <span class="op">=</span> <span class="st">"Return the current UTC timestamp."</span>,</span>
 <span>  fn <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
@@ -279,24 +274,16 @@ as the built-in ones.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Mix custom + securetools</span></span>
-<span><span class="va">assistant</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/Agent.html" class="external-link">agent</a></span><span class="op">(</span></span>
-<span>  <span class="st">"assistant"</span>,</span>
-<span>  chat <span class="op">=</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
-<span>    system_prompt <span class="op">=</span> <span class="st">"You help with data tasks and can check the current time."</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>    <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/data"</span><span class="op">)</span>,</span>
-<span>    <span class="va">timestamp_tool</span></span>
-<span>  <span class="op">)</span>,</span>
-<span>  secure <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="va">assistant</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ellmer.tidyverse.org/reference/chat_anthropic.html" class="external-link">chat_anthropic</a></span><span class="op">(</span></span>
+<span>  system_prompt <span class="op">=</span> <span class="st">"You help with data tasks and can check the current time."</span></span>
 <span><span class="op">)</span></span>
+<span><span class="va">assistant</span><span class="op">$</span><span class="fu">register_tool</span><span class="op">(</span><span class="fu"><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool</a></span><span class="op">(</span>tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="../reference/tool_calculator.html">tool_calculator</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="../reference/tool_read_file.html">tool_read_file</a></span><span class="op">(</span>allowed_dirs <span class="op">=</span> <span class="st">"/path/to/data"</span><span class="op">)</span>,</span>
+<span>  <span class="va">timestamp_tool</span></span>
+<span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">graph</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ian-flores.github.io/orchestr/reference/graph_react.html" class="external-link">react_graph</a></span><span class="op">(</span><span class="va">assistant</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="va">graph</span><span class="op">$</span><span class="fu">invoke</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>messages <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  <span class="st">"What time is it? Also, what is 2^10?"</span></span>
-<span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">assistant</span><span class="op">$</span><span class="fu">chat</span><span class="op">(</span><span class="st">"What time is it? Also, what is 2^10?"</span><span class="op">)</span></span></code></pre></div>
 <p>A custom tool’s <code>fn</code> runs in the parent process, like the
 securetools ones. The difference is that it only has the checks you
 write into it.</p>
@@ -309,11 +296,11 @@ write into it.</p>
 <code><a href="../articles/securetools.html">vignette("securetools")</a></code>: the tools and what each one
 checks</li>
 <li>
-<code><a href="https://ian-flores.github.io/orchestr/articles/quickstart.html" class="external-link">vignette("quickstart", package = "orchestr")</a></code>: agent and
-graph basics</li>
+<code><a href="https://ellmer.tidyverse.org/articles/tool-calling.html" class="external-link">vignette("tool-calling", package = "ellmer")</a></code>: tool
+calling in ellmer</li>
 <li>
 <code><a href="https://ian-flores.github.io/securer/articles/ellmer-integration.html" class="external-link">vignette("ellmer-integration", package = "securer")</a></code>:
-connecting securer to ellmer directly</li>
+more on <code><a href="https://ian-flores.github.io/securer/reference/as_ellmer_tool.html" class="external-link">as_ellmer_tool()</a></code> and session options</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

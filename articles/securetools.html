@@ -264,13 +264,11 @@ HTTPS. The host must match <code>allowed_domains</code>, where
 <code>*.example.com</code> matches any subdomain of
 <code>example.com</code> but not <code>example.com</code> itself. The
 tool looks up the host’s IP address once, refuses private and loopback
-addresses (and all IPv6 addresses), and then connects to that address so
-a second DNS answer can’t send it somewhere else. It doesn’t follow
-redirects, and it caps the response size and the number of calls per
-minute.</p>
-<p>HTTPS requests currently fail. Connecting by IP address breaks the
-TLS certificate check, so the example below errors until that is fixed.
-Plain HTTP works.</p>
+addresses (and all IPv6 addresses), and then tells curl to connect to
+that address so a second DNS answer can’t send it somewhere else. The
+URL keeps the host name, so HTTPS certificates are checked as usual. It
+doesn’t follow redirects, and it caps the response size and the number
+of calls per minute.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fetcher</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_fetch_url.html">tool_fetch_url</a></span><span class="op">(</span></span>
 <span>  allowed_domains <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"api.github.com"</span>, <span class="st">"*.githubusercontent.com"</span><span class="op">)</span>,</span>
@@ -314,14 +312,14 @@ in its result that it sampled.</p>
 runs a shell command.</p>
 <p><code><a href="../reference/tool_plot.html">tool_plot()</a></code> parses the code first and rejects any
 function that isn’t on its list of graphics, math, and data functions.
-That check is weaker than it sounds; see the known limitations below.
-The plot is written to a temporary file, checked against
+Every call has to name a function on the list directly, so tricks like
+<code>do.call("system", ...)</code>, <code>(f)(x)</code>, or
+<code><a href="https://rdrr.io/r/base/system.html" class="external-link">base::system()</a></code> are rejected. The code then runs in an
+environment that holds only the functions on the list, so even a helper
+that looks a function up by name can’t find <code><a href="https://rdrr.io/r/base/system.html" class="external-link">system()</a></code>. The
+plot is written to a temporary file, checked against
 <code>max_file_size</code>, and then copied to a path inside
 <code>allowed_dirs</code>.</p>
-<p>At the moment only <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> itself works. The code runs
-with only the base package visible, so functions from graphics such as
-<code><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist()</a></code>, <code><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines()</a></code>, and <code><a href="https://rdrr.io/r/graphics/barplot.html" class="external-link">barplot()</a></code>
-aren’t found, and the example below fails until that is fixed.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plotter</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tool_plot.html">tool_plot</a></span><span class="op">(</span></span>
 <span>  allowed_dirs <span class="op">=</span> <span class="st">"/path/to/output"</span>,</span>
@@ -372,8 +370,7 @@ must be inside an allowed folder.</li>
 <li>Writing to the wrong place: write paths are checked the same way,
 and checked again after the file is written.</li>
 <li>Running arbitrary code: the calculator and plot tools reject
-functions that aren’t on their lists (the plot tool has a known gap,
-below).</li>
+functions that aren’t on their lists.</li>
 <li>Reaching internal services: the URL tool only allows HTTP and HTTPS,
 allowed domains, and public IP addresses.</li>
 <li>SQL injection: the agent never writes SQL, and filter values are
@@ -391,14 +388,10 @@ path again after writing and delete the file if it ended up outside the
 allowed folders, but the write has already happened by then.</li>
 <li>Call limits live in memory. They reset when the R process restarts.
 If you need limits that last, enforce them outside R.</li>
-<li>The plot tool is not safe for untrusted code yet. Its allow list
-includes <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code>, and the code runs with base R visible,
-so <code>do.call("system", list("ls"))</code> gets past the check and
-runs. Until this is fixed, only use <code><a href="../reference/tool_plot.html">tool_plot()</a></code> inside a
-sandboxed session.</li>
-<li>
-<code><a href="../reference/tool_fetch_url.html">tool_fetch_url()</a></code> can’t fetch HTTPS URLs yet (see
-above).</li>
+<li>The plot tool’s check is a filter, not a sandbox. Plot code runs in
+your R process, and a long loop can still tie it up. Use
+<code><a href="../reference/tool_plot.html">tool_plot()</a></code> inside a sandboxed session when the code comes
+from an agent.</li>
 <li>Passing a data frame the size of <code>iris</code> or
 <code>mtcars</code> to <code>data_profile()</code> from inside a
 <code>SecureSession</code> currently fails while the data is sent
