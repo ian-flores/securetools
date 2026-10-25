@@ -28,6 +28,12 @@
   option instead of rewriting the URL, so TLS certificate and SNI checks
   use the real host name. Connections are no longer reused, so a pooled
   connection can’t bypass the pin.
+- [`tool_fetch_url()`](https://ian-flores.github.io/securetools/reference/tool_fetch_url.md)
+  works on Windows. Host names are now resolved with
+  [`curl::nslookup()`](https://jeroen.r-universe.dev/curl/reference/nslookup.html)
+  instead of [`utils::nsl()`](https://rdrr.io/r/utils/nsl.html), which
+  doesn’t exist on Windows, so every fetch there used to fail with “DNS
+  resolution failed”. curl is now in Suggests.
 - [`vignette("agent-integration")`](https://ian-flores.github.io/securetools/articles/agent-integration.md)
   uses ellmer and
   [`securer::as_ellmer_tool()`](https://ian-flores.github.io/securer/reference/as_ellmer_tool.html)

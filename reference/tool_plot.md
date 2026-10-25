@@ -123,7 +123,7 @@ plt@fn(
   plot_code = "plot(1:10, (1:10)^2, main = 'Example')"
 )
 #> $path
-#> [1] "/tmp/RtmpblVCEq/scatter.png"
+#> [1] "/tmp/Rtmp2Z9WuW/scatter.png"
 #> 
 #> $size
 #> [1] 27235
