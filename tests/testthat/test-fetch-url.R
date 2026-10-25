@@ -242,6 +242,8 @@ test_that(".pin_resolve builds a curl resolve entry with the default port", {
 
 test_that("fetch_url keeps the hostname in the URL and pins it with resolve", {
   skip_if_not_installed("httr2")
+  # utils::nsl() does not exist on Windows, so hosts never resolve there
+  skip_on_os("windows")
   local_mocked_bindings(nsl = function(hostname) "93.184.216.34", .package = "utils")
   seen <- NULL
   local_mocked_bindings(
@@ -266,6 +268,8 @@ test_that("fetch_url keeps the hostname in the URL and pins it with resolve", {
 
 test_that("fetch_url connects to the pinned IP, not a fresh DNS answer", {
   skip_if_not_installed("httr2")
+  # utils::nsl() does not exist on Windows, so hosts never resolve there
+  skip_on_os("windows")
   skip_on_cran()
   skip_if_offline()
   # Pin example.com to an unrelated public IP. If curl did its own lookup
@@ -278,6 +282,8 @@ test_that("fetch_url connects to the pinned IP, not a fresh DNS answer", {
 
 test_that("fetch_url fetches a real HTTPS URL", {
   skip_if_not_installed("httr2")
+  # utils::nsl() does not exist on Windows, so hosts never resolve there
+  skip_on_os("windows")
   skip_on_cran()
   skip_if_offline()
   tool <- tool_fetch_url(allowed_domains = "example.com", timeout_secs = 15)
