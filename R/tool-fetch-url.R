@@ -62,7 +62,7 @@ tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
     cli_abort("{.arg timeout_secs} must be a positive number.")
   }
 
-  rlang::check_installed("httr2", reason = "to use tool_fetch_url()")
+  rlang::check_installed(c("httr2", "curl"), reason = "to use tool_fetch_url()")
   max_bytes <- parse_size(max_response_size)
   lifetime_limiter <- new_rate_limiter(max_calls)
   minute_limiter <- new_rate_limiter(max_calls_per_minute, window_secs = 60)
@@ -117,7 +117,7 @@ tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
         # IP, then tell curl to use that IP for this host (CURLOPT_RESOLVE) so
         # the server cannot return a different address on a second lookup.
         # The URL keeps the host name, so TLS SNI and certificate checks work.
-        resolved_ip <- tryCatch(utils::nsl(domain), error = function(e) NULL)
+        resolved_ip <- .resolve_host(domain)
         if (is.null(resolved_ip)) {
           cli_abort("DNS resolution failed for host: {.val {domain}}")
         }
@@ -181,16 +181,31 @@ tool_fetch_url <- function(allowed_domains, max_response_size = "1MB",
   all(!is.na(suppressWarnings(as.integer(parts))))
 }
 
+#' Resolve a host name to one IPv4 address
+#'
+#' Uses curl's resolver, which works on every platform. (`utils::nsl()`
+#' does not exist on Windows.) IPv4 only, so the address can be checked
+#' against the private ranges in [.is_ip_private()].
+#'
+#' @param host Character(1). A host name or IPv4 literal.
+#' @return Character(1) IPv4 address, or `NULL` if the host doesn't resolve.
+#' @noRd
+.resolve_host <- function(host) {
+  tryCatch(
+    curl::nslookup(host, ipv4_only = TRUE, error = FALSE),
+    error = function(e) NULL
+  )
+}
+
 #' Check if a hostname or IP string is a private/reserved address
 #'
-#' Resolves hostnames via `nsl()` first, then checks the IP. For raw IP
-#' literals the resolution step is skipped.
+#' Resolves hostnames via [.resolve_host()] first, then checks the IP.
 #'
 #' @param host Character(1). A hostname or IP address string.
 #' @return Logical(1).
 #' @noRd
 .is_private_ip <- function(host) {
-  ip <- tryCatch(utils::nsl(host), error = function(e) NULL)
+  ip <- .resolve_host(host)
   if (is.null(ip)) return(FALSE)
   .is_ip_private(ip)
 }

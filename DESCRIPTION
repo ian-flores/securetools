@@ -26,6 +26,7 @@ Imports:
 Suggests:
     arrow,
     callr,
+    curl,
     DBI,
     ellmer,
     ggplot2,

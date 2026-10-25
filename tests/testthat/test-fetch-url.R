@@ -125,20 +125,20 @@ test_that("fetch_url rejects ftp:// protocol", {
 test_that(".is_private_ip blocks IPv6 loopback ::1", {
   # ::1 contains a colon, so the IPv6 check should return TRUE
   # We test the internal function directly with a mock-like approach:
-  # nsl() won't resolve "::1" as a hostname, but we can test by
+  # the resolver won't resolve "::1" as a hostname, but we can test by
   # checking that an IP string with colons is detected.
   # Use a hostname that resolves to IPv6 if available, or test the
   # internal logic directly.
 
-  # Test the IPv6 detection path: if nsl() returns an IPv6 address
+  # Test the IPv6 detection path: if the resolver returns an IPv6 address
   # (contains ":"), .is_private_ip should return TRUE.
-  # Since nsl() may not resolve "::1" as a hostname, we use
+  # Since the resolver may not resolve "::1" as a hostname, we use
   # mockr or test via the tool level.
   skip_if_not_installed("httr2")
 
-  # Direct test: pass "::1" as a hostname -- nsl will fail to resolve,
+  # Direct test: pass "::1" as a hostname -- the resolver will fail to resolve,
   # returning NULL, which means FALSE (let httr2 handle it).
-  # The real protection is when nsl() returns an IPv6 string.
+  # The real protection is when the resolver returns an IPv6 string.
   # We can verify the regex logic by checking that an IP with ":" is caught.
   # Create a wrapper to test the IPv6 detection logic in isolation.
   ip_has_colon <- function(ip) grepl(":", ip, fixed = TRUE)
@@ -151,7 +151,7 @@ test_that(".is_private_ip blocks IPv6 loopback ::1", {
 
 test_that(".is_private_ip returns TRUE for malformed (non-4-octet) IPs", {
   # The fix changes the length(octets) != 4 return from FALSE to TRUE
-  # This is tested indirectly: any non-IPv4, non-IPv6 format that nsl()
+  # This is tested indirectly: any non-IPv4, non-IPv6 format that the resolver
   # somehow returns would be blocked.
   # We verify the updated logic: split a malformed IP and check
   octets <- as.integer(strsplit("1.2.3", ".", fixed = TRUE)[[1]])
@@ -200,8 +200,6 @@ test_that("fetch_url aborts when DNS resolution fails", {
 
 test_that("fetch_url detects private IP on resolved address", {
   skip_if_not_installed("httr2")
-  # nsl() doesn't resolve "localhost" on Windows; skip there
-  skip_on_os("windows")
   # localhost resolves to 127.0.0.1 -- the resolved IP must be caught
   tool <- tool_fetch_url(allowed_domains = "localhost")
   expect_error(
@@ -242,9 +240,7 @@ test_that(".pin_resolve builds a curl resolve entry with the default port", {
 
 test_that("fetch_url keeps the hostname in the URL and pins it with resolve", {
   skip_if_not_installed("httr2")
-  # utils::nsl() does not exist on Windows, so hosts never resolve there
-  skip_on_os("windows")
-  local_mocked_bindings(nsl = function(hostname) "93.184.216.34", .package = "utils")
+  local_mocked_bindings(.resolve_host = function(host) "93.184.216.34")
   seen <- NULL
   local_mocked_bindings(
     req_perform = function(req, ...) {
@@ -268,26 +264,39 @@ test_that("fetch_url keeps the hostname in the URL and pins it with resolve", {
 
 test_that("fetch_url connects to the pinned IP, not a fresh DNS answer", {
   skip_if_not_installed("httr2")
-  # utils::nsl() does not exist on Windows, so hosts never resolve there
-  skip_on_os("windows")
   skip_on_cran()
   skip_if_offline()
   # Pin example.com to an unrelated public IP. If curl did its own lookup
   # the request would succeed; with the pin it reaches the wrong server and
   # the TLS certificate check fails.
-  local_mocked_bindings(nsl = function(hostname) "8.8.8.8", .package = "utils")
+  local_mocked_bindings(.resolve_host = function(host) "8.8.8.8")
   tool <- tool_fetch_url(allowed_domains = "example.com", timeout_secs = 10)
   expect_error(tool@fn(url = "https://example.com/"), "certificate|SSL|TLS")
 })
 
 test_that("fetch_url fetches a real HTTPS URL", {
   skip_if_not_installed("httr2")
-  # utils::nsl() does not exist on Windows, so hosts never resolve there
-  skip_on_os("windows")
   skip_on_cran()
   skip_if_offline()
   tool <- tool_fetch_url(allowed_domains = "example.com", timeout_secs = 15)
   res <- tool@fn(url = "https://example.com/")
   expect_equal(res$status, 200L)
   expect_match(res$body, "Example Domain")
+})
+
+test_that(".resolve_host resolves on every platform, including Windows", {
+  skip_if_not_installed("curl")
+  # utils::nsl() does not exist on Windows; .resolve_host must not need it
+  expect_equal(securetools:::.resolve_host("localhost"), "127.0.0.1")
+  expect_null(securetools:::.resolve_host("this-will-never-resolve.invalid"))
+  expect_equal(securetools:::.resolve_host("93.184.216.34"), "93.184.216.34")
+})
+
+test_that(".resolve_host returns a public IPv4 address for a real host", {
+  skip_if_not_installed("curl")
+  skip_on_cran()
+  skip_if_offline()
+  ip <- securetools:::.resolve_host("example.com")
+  expect_true(securetools:::.is_ip_literal(ip))
+  expect_false(securetools:::.is_ip_private(ip))
 })

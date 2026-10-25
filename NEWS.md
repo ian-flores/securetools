@@ -16,6 +16,10 @@
   curl's `resolve` option instead of rewriting the URL, so TLS certificate
   and SNI checks use the real host name. Connections are no longer reused,
   so a pooled connection can't bypass the pin.
+* `tool_fetch_url()` works on Windows. Host names are now resolved with
+  `curl::nslookup()` instead of `utils::nsl()`, which doesn't exist on
+  Windows, so every fetch there used to fail with "DNS resolution failed".
+  curl is now in Suggests.
 * `vignette("agent-integration")` uses ellmer and `securer::as_ellmer_tool()`
   directly instead of the archived orchestr package, which is no longer in
   Suggests.
